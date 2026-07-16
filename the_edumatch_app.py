@@ -13,7 +13,6 @@ from groq import Groq
 # ===========================================================================
 load_dotenv(override=True)
 
-# Bulk-strip any trailing spaces, quotes, or shell artifacts from your API Key safely
 raw_key = os.environ.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
 GROQ_API_KEY = None
 if raw_key:
@@ -25,7 +24,10 @@ if raw_key:
         .replace("\n", "")
     )
 
-# Enforce app-wide layout grid spacing constraints immediately prior to loading assets
+# Model name is configurable via env var so it's a one-line fix if Groq
+# deprecates/renames a model, instead of a code change.
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
+
 st.set_page_config(
     page_title="EduMatch Academic Advisory Suite", page_icon="🎓", layout="wide"
 )
@@ -39,25 +41,65 @@ def load_all_assets():
     """
     Loads machine learning pipeline artifacts, scalers, and text chunks,
     automatically fitting text structures for out-of-sample RAG queries.
+
+    Returns a `load_errors` list so the UI can tell the user *exactly*
+    what failed, instead of silently falling back to heuristics.
     """
     model, scaler, kmeans, scaler_clustering = None, None, None, None
+    load_errors = []
+
+    # --- FIX: the two scaler paths used to differ only by a space vs. an
+    # underscore ("clustering scaler.pkl" vs "clustering_scaler.pkl"), which
+    # strongly suggested a typo rather than two intentionally distinct files.
+    # We now look for a dedicated RF-classifier scaler under a handful of
+    # sensible candidate names, and use ONE canonical filename for the
+    # clustering scaler. If the RF-specific file truly doesn't exist yet,
+    # we say so explicitly instead of guessing.
+    rf_scaler_candidates = [
+        "models/scaler.pkl",
+        "models/rf_scaler.pkl",
+        "models/retention_scaler.pkl",
+        "models/clustering_scaler.pkl",  # last-resort: same scaler as clustering
+    ]
+
     try:
-        # Load the Supervised Random Forest Classifier Model
         model = joblib.load("models/german_retention_model.pkl")
-
-        # Load the primary pipeline RobustScaler used for the main dataset split
-        scaler = joblib.load("models/clustering scaler.pkl")
-
-        # Load the Unsupervised K-Means Segmentation Model
-        kmeans = joblib.load("models/kmeans_model.pkl")
-
-        # Load the dedicated sub-scaler used for K-Means distance calculations
-        scaler_clustering = joblib.load("models/clustering_scaler.pkl")
-
     except Exception as e:
-        st.error(
-            f"❌ Error loading production system files from models/ directory: {e}"
+        load_errors.append(f"Retention model (models/german_retention_model.pkl): {e}")
+
+    scaler_path_used = None
+    for candidate in rf_scaler_candidates:
+        if os.path.exists(candidate):
+            try:
+                scaler = joblib.load(candidate)
+                scaler_path_used = candidate
+                break
+            except Exception as e:
+                load_errors.append(f"RF scaler ({candidate}): {e}")
+    if scaler is None:
+        load_errors.append(
+            "No RF-classifier scaler file found. Checked: "
+            + ", ".join(rf_scaler_candidates)
         )
+    elif scaler_path_used == "models/clustering_scaler.pkl":
+        # This is only reached if no dedicated RF scaler exists — flag it
+        # loudly because reusing the clustering scaler for the RF model's
+        # features is very likely incorrect (different feature scaling).
+        load_errors.append(
+            "⚠️ No dedicated RF scaler found — reusing models/clustering_scaler.pkl "
+            "for the classifier. Predictions may be inaccurate if these scalers "
+            "were fit on different feature distributions."
+        )
+
+    try:
+        kmeans = joblib.load("models/kmeans_model.pkl")
+    except Exception as e:
+        load_errors.append(f"K-Means model (models/kmeans_model.pkl): {e}")
+
+    try:
+        scaler_clustering = joblib.load("models/clustering_scaler.pkl")
+    except Exception as e:
+        load_errors.append(f"Clustering scaler (models/clustering_scaler.pkl): {e}")
 
     # --- REGULATORY TEXT INGESTION DISK SCANNER ---
     chunks = []
@@ -70,7 +112,6 @@ def load_all_assets():
                 c.strip() for c in f.read().split("=== CLAUSE START ===") if c.strip()
             ]
 
-    # Robust baseline fallback if multi-PDF text extractions are entirely missing from working disk
     if not chunks:
         chunks = [
             "[PO-101] General Examination Regulations Framework: Registration rules require valid fees paid prior to semester deadlines.",
@@ -79,17 +120,78 @@ def load_all_assets():
             "[PO-302] Examination repetition limits: Students are granted up to three attempts for mandatory core module examinations before termination.",
         ]
 
-    # Fit the text standardizers for search vocabulary mapping
     vectorizer = TfidfVectorizer(stop_words="english")
     tfidf_matrix = vectorizer.fit_transform(chunks)
 
-    return model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix
+    return (
+        model,
+        scaler,
+        kmeans,
+        scaler_clustering,
+        chunks,
+        vectorizer,
+        tfidf_matrix,
+        load_errors,
+    )
 
 
-# --- UNPACK MASTER RESERIALIZATION PLATFORM ---
-model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix = (
-    load_all_assets()
-)
+(
+    model,
+    scaler,
+    kmeans,
+    scaler_clustering,
+    chunks,
+    vectorizer,
+    tfidf_matrix,
+    load_errors,
+) = load_all_assets()
+
+# Surface any load problems once, up top, instead of only inside a
+# try/except deep in the submit handler.
+if load_errors:
+    with st.expander(
+        "⚠️ System asset loading warnings (click to expand)", expanded=False
+    ):
+        for err in load_errors:
+            st.warning(err)
+
+# --- FIX: dynamically validate the hardcoded cluster label map against the
+# actual fitted K-Means model. If a model is retrained with a different
+# n_clusters, the hardcoded labels below would silently mislabel cohorts.
+CLUSTER_LABELS = {
+    0: "Cluster 0: High Academic Progress with Structural Risk Factors",
+    1: "Cluster 1: Moderate Credit Accumulation and Study-Load Risk",
+    2: "Cluster 2: Early Non-Engagement Profile: Younger Male Students",
+    3: "Cluster 3: Employed Student Study-Work Pressure Profile",
+    4: "Cluster 4: International Student Transition and Credit-Progress Risk",
+    5: "Cluster 5: BAföG Recipient Financial-Support and Progression Risk",
+    6: "Cluster 6: Mature Student High-Performance with Retention Risk",
+    7: "Cluster 7: Stable Academic Progress with Socio-Economic Vulnerability",
+    8: "Cluster 8: Early Non-Engagement Profile: Mature Students",
+    9: "Cluster 9: BAföG Recipient Declining Academic-Progress Profile",
+    10: "Cluster 10: Employed Mature Student Study-Work Pressure Profile",
+    11: "Cluster 11: Mid-Programme Semester-Two Academic Decline Profile",
+    12: "Cluster 12: Working Master's Student Academic-Progress Decline Profile",
+    13: "Cluster 13: High ECTS Accumulation with General Retention Risk",
+    14: "Cluster 14: Early Non-Engagement Profile: Younger Female Students",
+}
+
+cluster_labels_valid = True
+if kmeans is not None and hasattr(kmeans, "n_clusters"):
+    if kmeans.n_clusters != len(CLUSTER_LABELS):
+        cluster_labels_valid = False
+        st.warning(
+            f"⚠️ The loaded K-Means model has {kmeans.n_clusters} clusters, but "
+            f"{len(CLUSTER_LABELS)} hardcoded labels are defined. Cohort names below "
+            "will show as generic placeholders until the label map is updated to match."
+        )
+
+
+def get_cluster_label(cluster_id):
+    if cluster_labels_valid and cluster_id in CLUSTER_LABELS:
+        return CLUSTER_LABELS[cluster_id]
+    return f"Cluster {cluster_id}: (label map out of sync with model — update CLUSTER_LABELS)"
+
 
 # ===========================================================================
 #  SESSION STATE LIFECYCLE MANAGEMENT
@@ -106,6 +208,13 @@ if "sandbox_response" not in st.session_state:
     st.session_state.sandbox_response = None
 if "sandbox_chunks" not in st.session_state:
     st.session_state.sandbox_chunks = None
+# --- FIX: track whether the last prediction used the real model or the
+# heuristic fallback, so the UI can show a persistent, visible indicator
+# rather than a st.warning that can get scrolled/rerun away.
+if "used_heuristic_fallback" not in st.session_state:
+    st.session_state.used_heuristic_fallback = False
+if "fallback_reason" not in st.session_state:
+    st.session_state.fallback_reason = None
 
 
 def clear_inputs():
@@ -115,11 +224,12 @@ def clear_inputs():
     st.session_state.cluster_id = None
     st.session_state.sandbox_response = None
     st.session_state.sandbox_chunks = None
+    st.session_state.used_heuristic_fallback = False
+    st.session_state.fallback_reason = None
 
 
 st.title("🎓 EduMatch: Predictive Student Retention and Prescriptive Analytics")
 
-# Establish layout partitioning instantly prior to capturing state updates
 col1, col2 = st.columns([1, 1.2])
 
 # ===========================================================================
@@ -129,7 +239,6 @@ with col1:
     st.header("📋 Advisor Input Panel")
     with st.form(key=f"input_form_{st.session_state.form_key}"):
 
-        # --- INSTRUCTOR SUGGESTION: Socio-economic Indicators Column ---
         st.subheader("🌍 Socio-economic Indicators")
         gender = st.selectbox("Gender", ["Female", "Male"])
         residency = st.selectbox(
@@ -155,12 +264,14 @@ with col1:
             ["Bachelor Level Degree Program", "Master Level Degree program"],
         )
         ects_s1 = st.number_input("ECTS Credits Earned (Sem 1)", 0, 30, 12)
+        # FIX: both grade sliders now use the same 0.1 step (German grades
+        # are conventionally given in 0.1 increments, e.g. 1.0, 1.3, 1.7).
         grade_s1 = st.slider(
-            "Grade Average (Sem 1) [1.0 Best to 5.0 Fail]", 1.0, 5.0, 3.8,0.1
+            "Grade Average (Sem 1) [1.0 Best to 5.0 Fail]", 1.0, 5.0, 3.8, 0.1
         )
         ects_s2 = st.number_input("ECTS Credits Earned (Sem 2)", 0, 30, 10)
         grade_s2 = st.slider(
-            "Grade Average (Sem 2) [1.0 Best to 5.0 Fail]", 1.0, 5.0, 3.8,0.2
+            "Grade Average (Sem 2) [1.0 Best to 5.0 Fail]", 1.0, 5.0, 3.8, 0.1
         )
 
         submit_btn = st.form_submit_button("🚀 Run Prediction & RAG Analysis")
@@ -169,10 +280,10 @@ with col1:
         clear_inputs()
         st.rerun()
 
-    # --- REACTIVE MATRIX CALCULATOR TRIGGER ---
     if submit_btn:
-        # Move the cache clear step HERE so it only triggers precisely upon clicking submit
         st.session_state.risk_pct = None
+        st.session_state.used_heuristic_fallback = False
+        st.session_state.fallback_reason = None
 
         st.session_state.cached_student = {
             "bafoeg": bafoeg,
@@ -187,7 +298,6 @@ with col1:
             "grade_s2": grade_s2,
         }
 
-        # Structuring query row array mapping back features matching model parameters
         input_dict = {
             "BAfoeg_Status": 1 if bafoeg == "Yes (Recipient)" else 0,
             "Residency_Status": 1 if "Non-EU" in residency else 0,
@@ -209,12 +319,10 @@ with col1:
             and scaler_clustering is not None
         ):
             try:
-                # 1. Transform inputs using RobustScaler for the main classification probability
                 input_df_rf = input_df[scaler.feature_names_in_]
                 scaled_rf = scaler.transform(input_df_rf)
                 st.session_state.risk_pct = model.predict_proba(scaled_rf)[0][1] * 100
 
-                # 2. Transform inputs using the dedicated StandardScaler for the K-Means profile routing
                 input_df_km = input_df[scaler_clustering.feature_names_in_]
                 scaled_km = scaler_clustering.transform(input_df_km)
                 st.session_state.cluster_id = kmeans.predict(scaled_km)[0]
@@ -225,17 +333,31 @@ with col1:
                 )
                 st.stop()
             except Exception as e:
-                st.warning(f"⚠️ Computational calculation trace failure: {e}")
                 st.session_state.risk_pct = None
                 st.session_state.cluster_id = 1 if (ects_s1 + ects_s2) < 30 else 0
+                st.session_state.used_heuristic_fallback = True
+                st.session_state.fallback_reason = (
+                    f"Computation error during prediction: {e}"
+                )
         else:
-            # Safe heuristics baseline fallback if artifacts are empty or corrupted
+            missing = []
+            if model is None:
+                missing.append("retention model")
+            if scaler is None:
+                missing.append("RF scaler")
+            if kmeans is None:
+                missing.append("K-Means model")
+            if scaler_clustering is None:
+                missing.append("clustering scaler")
             st.session_state.risk_pct = None
             st.session_state.cluster_id = 1 if (ects_s1 + ects_s2) < 30 else 0
+            st.session_state.used_heuristic_fallback = True
+            st.session_state.fallback_reason = "Missing artifacts: " + ", ".join(
+                missing
+            )
 
         st.rerun()
 
-    # --- AD-HOC CONSULTATION CONSOLE INJECTED LOWER LEFT ---
     st.markdown("---")
     st.markdown("### 💬 Ad-Hoc Regulatory Consultation Sandbox")
     st.markdown(
@@ -280,12 +402,20 @@ with col1:
                 payload = "\n\n".join(st.session_state.sandbox_chunks)
                 prompt = f"Student Profile: {c}. Regulation context: {payload}. Answer the following specific query: {custom_question}"
 
-                with st.spinner("Synthesizing advice..."):
-                    res = client.chat.completions.create(
-                        model="llama-3.1-8b-instant",  # Switched to token-saver model
-                        messages=[{"role": "user", "content": prompt}],
+                try:
+                    with st.spinner("Synthesizing advice..."):
+                        res = client.chat.completions.create(
+                            model=GROQ_MODEL,
+                            messages=[{"role": "user", "content": prompt}],
+                        )
+                        st.session_state.sandbox_response = res.choices[
+                            0
+                        ].message.content
+                except Exception as e:
+                    st.error(
+                        f"❌ **Groq API Error** while answering the sandbox question "
+                        f"(model=`{GROQ_MODEL}`): {e}"
                     )
-                    st.session_state.sandbox_response = res.choices[0].message.content
 
     if st.session_state.sandbox_response is not None:
         st.markdown("---")
@@ -301,25 +431,17 @@ with col2:
         c = st.session_state.cached_student
         cluster_id = st.session_state.cluster_id
 
-        cluster_labels = {
-            0: "Cluster 0: High Academic Progress with Structural Risk Factors",
-            1: "Cluster 1: Moderate Credit Accumulation and Study-Load Risk",
-            2: "Cluster 2: Early Non-Engagement Profile: Younger Male Students",
-            3: "Cluster 3: Employed Student Study-Work Pressure Profile",
-            4: "Cluster 4: International Student Transition and Credit-Progress Risk",
-            5: "Cluster 5: BAföG Recipient Financial-Support and Progression Risk",
-            6: "Cluster 6: Mature Student High-Performance with Retention Risk",
-            7: "Cluster 7: Stable Academic Progress with Socio-Economic Vulnerability",
-            8: "Cluster 8: Early Non-Engagement Profile: Mature Students",
-            9: "Cluster 9: BAföG Recipient Declining Academic-Progress Profile",
-            10: "Cluster 10: Employed Mature Student Study-Work Pressure Profile",
-            11: "Cluster 11: Mid-Programme Semester-Two Academic Decline Profile",
-            12: "Cluster 12: Working Master’s Student Academic-Progress Decline Profile",
-            13: "Cluster 13: High ECTS Accumulation with General Retention Risk",
-            14: "Cluster 14: Early Non-Engagement Profile: Younger Female Students",
-        }
+        # --- FIX: persistent, visible banner whenever heuristic fallback
+        # was used, instead of a st.warning that only fires once at submit
+        # time and can be lost after st.rerun().
+        if st.session_state.used_heuristic_fallback:
+            st.warning(
+                "⚠️ **Heuristic estimate — not the trained model.** The prediction "
+                "below was computed with a rule-of-thumb formula because the ML "
+                f"pipeline could not be used ({st.session_state.fallback_reason}). "
+                "Treat this number as a rough approximation only."
+            )
 
-        # --- DYNAMIC HEURISTIC PROBABILITY CALIBRATION LAYER ---
         s1_deficit = max(0, 30 - c["ects_s1"])
         s2_deficit = max(0, 30 - c["ects_s2"])
         ects_penalty_score = (s1_deficit * 1.5) + (s2_deficit * 1.5)
@@ -347,7 +469,6 @@ with col2:
             final_risk_pct = (academic_score * 0.70) + (socioeconomic_score * 0.30)
             final_risk_pct = min(98.5, max(4.5, final_risk_pct))
 
-        # Render Alert Interfaces dynamically tracking our mathematical gradients
         if final_risk_pct >= 40.0:
             st.error(
                 f"### ⚠️ HIGH RETENTION ALERT: **{final_risk_pct:.1f}% Attrition Probability** (Threshold: 40.0%)"
@@ -358,7 +479,6 @@ with col2:
             )
 
         st.markdown("#### 📊 Risk Driver Deconstruction")
-        st.columns(2)
         sub_col1, sub_col2 = st.columns(2)
 
         with sub_col1:
@@ -384,9 +504,7 @@ with col2:
             )
 
         st.markdown("---")
-        st.markdown(
-            f"**👥Cohort Profile Focus:** {cluster_labels.get(cluster_id, 'Specialized Framework Segment Overview')}"
-        )
+        st.markdown(f"**👥Cohort Profile Focus:** {get_cluster_label(cluster_id)}")
 
         # ===========================================================================
         # VECTOR-MATCHED RAG ADVISORY GENERATION PLATFORM
@@ -477,7 +595,7 @@ with col2:
                     "LLM synthesizing verified student regulatory advice..."
                 ):
                     response = client.chat.completions.create(
-                        model="llama-3.1-8b-instant",  # Switched to token-saver model
+                        model=GROQ_MODEL,
                         messages=[
                             {"role": "system", "content": system_message},
                             {"role": "user", "content": user_message},
@@ -487,12 +605,23 @@ with col2:
                     st.markdown(response.choices[0].message.content)
             except Exception as e:
                 st.error(
-                    f"❌ **Groq Authentication Crash during RAG Generation:** {str(e)}"
+                    f"❌ **Groq API Error during RAG Generation** (model=`{GROQ_MODEL}`): {e}"
                 )
+        elif matched_rules and not GROQ_API_KEY:
+            st.info(
+                "ℹ️ Matched regulation clauses were found, but no Groq API key is "
+                "configured, so no LLM-synthesized advisory could be generated. "
+                "See the matched clauses below."
+            )
 
-        with st.expander("🔎 View Source Clauses [PO-101]"):
-            for i, rule in enumerate(matched_rules, 1):
-                st.info(f"**Source Context Block #{i}:**\n{rule}")
+        if matched_rules:
+            with st.expander("🔎 View Source Clauses [PO-101]"):
+                for i, rule in enumerate(matched_rules, 1):
+                    st.info(f"**Source Context Block #{i}:**\n{rule}")
+        else:
+            st.caption(
+                "No regulation clauses matched this student's profile above the similarity threshold."
+            )
     else:
         st.info(
             "ℹ️ Fill out student parameters on the left panel and click **Run Prediction & RAG Analysis**."
