@@ -161,9 +161,6 @@ with col1:
             "Grade Average (Sem 2) [1.0 Best to 5.0 Fail]", 1.0, 5.0, 3.9, 0.1
         )
 
-        # Clear active stale values on incoming inputs to guarantee live recalculations
-        st.session_state.risk_pct = None
-
         submit_btn = st.form_submit_button("🚀 Run Prediction & RAG Analysis")
 
     if st.button("🧹 Clear All Inputs"):
@@ -172,6 +169,9 @@ with col1:
 
     # --- REACTIVE MATRIX CALCULATOR TRIGGER ---
     if submit_btn:
+        # Move the cache clear step HERE so it only triggers precisely upon clicking submit
+        st.session_state.risk_pct = None
+
         st.session_state.cached_student = {
             "bafoeg": bafoeg,
             "residency": residency,
@@ -231,6 +231,8 @@ with col1:
             st.session_state.risk_pct = None
             st.session_state.cluster_id = 1 if (ects_s1 + ects_s2) < 30 else 0
 
+        st.rerun()
+
     # --- AD-HOC CONSULTATION CONSOLE INJECTED LOWER LEFT ---
     st.markdown("---")
     st.markdown("### 💬 Ad-Hoc Regulatory Consultation Sandbox")
@@ -278,7 +280,7 @@ with col1:
 
                 with st.spinner("Synthesizing advice..."):
                     res = client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
+                        model="llama-3.1-8b-instant",  # Switched to token-saver model
                         messages=[{"role": "user", "content": prompt}],
                     )
                     st.session_state.sandbox_response = res.choices[0].message.content
@@ -473,7 +475,7 @@ with col2:
                     "LLM synthesizing verified student regulatory advice..."
                 ):
                     response = client.chat.completions.create(
-                        model="llama-3.1-8b-instant",
+                        model="llama-3.1-8b-instant",  # Switched to token-saver model
                         messages=[
                             {"role": "system", "content": system_message},
                             {"role": "user", "content": user_message},
