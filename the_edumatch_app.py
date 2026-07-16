@@ -128,10 +128,12 @@ col1, col2 = st.columns([1, 1.2])
 with col1:
     st.header("📋 Advisor Input Panel")
     with st.form(key=f"input_form_{st.session_state.form_key}"):
-
-        # --- INSTRUCTOR SUGGESTION: Socio-economic Indicators Column ---
         st.subheader("🌍 Socio-economic Indicators")
         gender = st.selectbox("Gender", ["Female", "Male"])
+        is_master = st.selectbox(
+            "Enrolled Degree Level",
+            ["Bachelor Level Degree Program", "Master Level Degree program"],
+        )
         residency = st.selectbox(
             "Residency Classification",
             ["EU / Domestic Student", "Non-EU International Track"],
@@ -149,11 +151,7 @@ with col1:
             ["Stable Housing Structure", "Unstable Accommodation Arrangement"],
         )
 
-        st.subheader("📚 Academic Milestones")
-        is_master = st.selectbox(
-            "Enrolled Degree Level",
-            ["Bachelor Level Degree Program", "Master Level Degree program"],
-        )
+        st.subheader("Academic Milestones")
         ects_s1 = st.number_input("ECTS Credits Earned (Sem 1)", 0, 40, 12)
         grade_s1 = st.slider(
             "Grade Average (Sem 1) [1.0 Best to 5.0 Fail]", 1.0, 5.0, 3.8, 0.1
