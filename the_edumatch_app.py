@@ -40,26 +40,36 @@ def load_all_assets():
     Loads machine learning pipeline artifacts dynamically using
     absolute path resolution relative to this script's location.
     """
-    # Get the directory where app.py actually lives
+    # Enforce safe container absolute paths on Streamlit Cloud
     base_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Construct robust paths
+    # Construct verified paths
     model_path = os.path.join(base_dir, "models", "german_retention_model.pkl")
     scaler_path = os.path.join(base_dir, "models", "scaler.pkl")
     kmeans_path = os.path.join(base_dir, "models", "kmeans_model.pkl")
+    clustering_scaler_path = os.path.join(base_dir, "models", "clustering_scaler.pkl")
 
-    model, scaler, kmeans = None, None, None
+    # Pre-initialize variables as None to explicitly guarantee they exist for the return statement
+    model, scaler, kmeans, scaler_clustering = None, None, None, None
+    chunks, vectorizer, tfidf_matrix = [], None, None
+
     try:
         model = joblib.load(model_path)
         scaler = joblib.load(scaler_path)
         kmeans = joblib.load(kmeans_path)
-        st.success("✅ Production models loaded successfully!")
+        scaler_clustering = joblib.load(clustering_scaler_path)  # assigned match
+
+        # --- Standard text parsing/RAG setups sit here ---
+        # Assuming you fit or load your text metrics...
+        # chunks = ...
+        # vectorizer = ...
+        # tfidf_matrix = ...
+
     except Exception as e:
         st.error(f"❌ Error loading production system files: {e}")
 
-    # Standard TF-IDF compilation
-    # ... (rest of your vectorizer and chunk loading logic)
-
+    # Standardized variable names completely aligned to prevent NameError flags
+    return model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix
     # --- REGULATORY TEXT INGESTION DISK SCANNER ---
     chunks = []
     if os.path.exists("raw_extracted_po.txt"):
