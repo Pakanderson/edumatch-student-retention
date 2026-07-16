@@ -11,7 +11,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 # 1. STRUCTURAL INITIALIZATION, SECURITY & GLOBAL STYLES
 # ===========================================================================
 
-# Enforce layout prior to executing downstream tasks
+# Enforce app-wide layout grid spacing constraints immediately
 st.set_page_config(
     page_title="EduMatch Academic Advisory Suite", page_icon="🎓", layout="wide"
 )
@@ -36,7 +36,7 @@ st.markdown(
     }
 </style>
 """,
-    unsafe_allowed_code_with_html=True,
+    unsafe_allow_html=True,
 )
 
 # Securely extract and clean production system tokens
@@ -145,43 +145,44 @@ def clear_inputs():
 
 
 # ===========================================================================
-# 4. USER INTERACTION INTERFACE & SIDEBAR INPUT FORM (COL1)
+# 4. USER INTERACTION INTERFACE & ADVISOR INPUT PANEL (COL1)
 # ===========================================================================
 
-st.title("🎓 EduMatch: Predictive Student Retention & Prescriptive Analytics")
+st.title("🎓 EduMatch: Predictive Student Retention and Prescriptive Analytics")
 col1, col2 = st.columns([1.1, 1.2], gap="large")
 
 with col1:
     st.header("📋 Advisor Input Panel")
 
-    # Establish single unified transactional block form element
+    # Establish a single unified transactional form element block
     with st.form(key=f"input_form_{st.session_state.form_key}"):
 
         st.subheader("🌍 Socio-economic Indicators")
         gender = st.selectbox("Gender", ["Female", "Male"])
-        is_master = st.selectbox("Degree Level", ["Bachelor", "Master"])
-        bafoeg = st.selectbox(
-            "Financial Support (BAföG Status)", ["Recipient", "Non-Recipient"]
-        )
-        student_job = st.selectbox(
-            "Employment Job Status",
-            [
-                "Unemployed / Full-Time Student",
-                "Part-Time Job",
-                "Full-Time Corporate Placement",
-            ],
+        is_master = st.selectbox(
+            "Enrolled Degree Level",
+            ["Bachelor Level Degree Program", "Master Level Degree program"],
         )
         residency = st.selectbox(
-            "Student Classification", ["Domestic Student", "International Student"]
+            "Residency Classification",
+            ["EU / Domestic Student", "Non-EU International Track"],
+        )
+        bafoeg = st.selectbox("BAföG Recipient Status", ["No", "Yes (Recipient)"])
+        student_job = st.selectbox(
+            "Employment Configuration",
+            [
+                "No Job (Full-Time Study Focus)",
+                "Balancing Student Job / Part-Time Work",
+            ],
         )
         accommodation = st.selectbox(
-            "Accommodation Profile",
-            ["Living with Parents", "Student Dormitory", "Private Rental Apartment"],
+            "Accommodation Stability",
+            ["Stable Housing Structure", "Unstable Accommodation Arrangement"],
         )
 
         st.markdown("---")
 
-        st.subheader("📚 Academic Milestones")
+        st.subheader("Academic Milestones")
         ects_s1 = st.number_input("ECTS Credits Earned (Sem 1)", 0, 40, 12)
         grade_s1 = st.slider(
             "Grade Average (Sem 1) [1.0 Best to 5.0 Fail]", 1.0, 5.0, 3.8, 0.1
@@ -193,22 +194,22 @@ with col1:
 
         submit_btn = st.form_submit_button("🚀 Run Prediction & RAG Analysis")
 
-    # Layout reset command immediately below the form layout block
-    if st.button("🧹 Clear All Advisor Inputs"):
+    # Layout reset command immediately below form structure
+    if st.button("🧹 Clear All Advisor Inputs", use_container_width=True):
         clear_inputs()
         st.rerun()
 
     # Dynamic Live Sub-Heuristics Evaluator Logic Step
-    # Evaluates immediately to break any variable display freezing
+    # Evaluates immediately to break any frozen calculations
     academic_calc = (
         50.0 if (ects_s1 + ects_s2) < 25 else (20.0 + (max(grade_s1, grade_s2) * 5.0))
     )
     socio_calc = 15.0
-    if "Full-Time" in student_job:
-        socio_calc += 35.0
-    if "International" in residency:
+    if "Part-Time" in student_job:
         socio_calc += 20.0
-    if "Recipient" in bafoeg and (ects_s1 + ects_s2) < 30:
+    if "Non-EU" in residency:
+        socio_calc += 20.0
+    if "Yes (Recipient)" in bafoeg and (ects_s1 + ects_s2) < 30:
         socio_calc += 25.0
 
     academic_calc = min(95.0, max(5.0, academic_calc))
@@ -219,14 +220,14 @@ with col1:
         st.session_state.academic_score = academic_calc
         st.session_state.socio_score = socio_calc
 
-        # Prepare state map package for serialization requirements
+        # Prepare state map package for serialization
         st.session_state.cached_student = {
+            "bafoeg": bafoeg,
+            "residency": residency,
+            "student_job": student_job,
+            "accommodation": accommodation,
             "gender": gender,
             "is_master": is_master,
-            "bafoeg": bafoeg,
-            "student_job": student_job,
-            "residency": residency,
-            "accommodation": accommodation,
             "ects_s1": ects_s1,
             "grade_s1": grade_s1,
             "ects_s2": ects_s2,
@@ -236,30 +237,19 @@ with col1:
         # 1. Execute Inference against Random Forest Pipeline Classifier
         if model is not None:
             try:
-                # Convert form parameters into ML feature input shape array structure
-                input_df = pd.DataFrame(
-                    [
-                        {
-                            "Gender": 1 if gender == "Male" else 0,
-                            "IsMaster": 1 if is_master == "Master" else 0,
-                            "Bafoeg": 1 if bafoeg == "Recipient" else 0,
-                            "StudentJob": 1 if "Job" in student_job else 0,
-                            "Residency": (
-                                1 if residency == "International Student" else 0
-                            ),
-                            "Accommodation": (
-                                1
-                                if "Dormitory" in accommodation
-                                or "Parents" in accommodation
-                                else 0
-                            ),
-                            "ECTS_S1": ects_s1,
-                            "Grade_S1": grade_s1,
-                            "ECTS_S2": ects_s2,
-                            "Grade_S2": grade_s2,
-                        }
-                    ]
-                )
+                input_dict = {
+                    "BAfoeg_Status": 1 if bafoeg == "Yes (Recipient)" else 0,
+                    "Residency_Status": 1 if "Non-EU" in residency else 0,
+                    "Student_Job": 1 if "Job" in student_job else 0,
+                    "Accommodation_Status": 1 if "Unstable" in accommodation else 0,
+                    "Gender": 1 if gender == "Male" else 0,
+                    "Is_Master": 1 if "Master" in is_master else 0,
+                    "ECTS_Earned_Sem1": ects_s1,
+                    "Grade_Avg_Sem1": grade_s1,
+                    "ECTS_Earned_Sem2": ects_s2,
+                    "Grade_Avg_Sem2": grade_s2,
+                }
+                input_df = pd.DataFrame([input_dict])
                 prob = model.predict_proba(input_df)[0][1] * 100.0
                 st.session_state.risk_pct = prob
             except Exception:
@@ -267,7 +257,7 @@ with col1:
         else:
             st.session_state.risk_pct = None
 
-        # 2. Execute Cohort Group Lookup against Scaled K-Means Cluster Estimator
+        # 2. Execute Cohort Group Lookup against Scaled K-Means Cluster
         if kmeans is not None and scaler_clustering is not None:
             try:
                 cluster_features = np.array([[ects_s1, grade_s1, ects_s2, grade_s2]])
@@ -283,14 +273,12 @@ with col1:
     # --- AD-HOC CONSULTATION CONSOLE INJECTED LOWER LEFT ---
     st.markdown("---")
     st.markdown("### 💬 Ad-Hoc Regulatory Consultation Sandbox")
-    st.markdown(
-        "*Ask an ad-hoc question regarding specific rules or edge cases for this student:*"
-    )
+    st.markdown("*Ask an ad-hoc compliance question based on the regulations loaded:*")
 
     custom_question = st.text_input(
-        "Enter your specific advisor question here:", key="advisor_free_question"
+        "Enter your compliance query:", key="advisor_free_question"
     )
-    ask_button = st.button("💬 Query Examination Database")
+    ask_button = st.button("💬 Query Regulations System")
 
     if ask_button and custom_question:
         if not GROQ_API_KEY:
@@ -310,7 +298,7 @@ with col1:
                 }
             )
 
-            # Map query context blocks semantically using cosine transformations
+            # Map query context blocks semantically
             question_vector = vectorizer.transform([custom_question])
             question_scores = cosine_similarity(question_vector, tfidf_matrix).flatten()
             st.session_state.sandbox_chunks = [
@@ -321,7 +309,7 @@ with col1:
 
             if st.session_state.sandbox_chunks:
                 payload = "\n\n".join(st.session_state.sandbox_chunks)
-                prompt = f"Student Profile Context: {c}. Regulatory Context Elements: {payload}. Answer the query: {custom_question}"
+                prompt = f"Student Profile: {c}. Regulation context: {payload}. Answer: {custom_question}"
 
                 try:
                     client = Groq(api_key=GROQ_API_KEY)
@@ -346,7 +334,7 @@ with col1:
 with col2:
     st.header("⚡ Live Analytics Engine")
 
-    # 1. State Decoupling Evaluation: Hard link live screen drivers if session state lags behind
+    # 1. State Decoupling Evaluation
     if st.session_state.risk_pct is not None:
         final_risk_pct = st.session_state.risk_pct
     else:
@@ -354,7 +342,7 @@ with col2:
 
     final_risk_pct = min(98.5, max(4.5, final_risk_pct))
 
-    # Enforce panel-approved 40.0% alert gradient conditions natively
+    # Enforce panel-approved 40.0% alert gradient conditions
     if final_risk_pct >= 40.0:
         st.error(
             f"### ⚠️ HIGH RETENTION ALERT: {final_risk_pct:.1f}% Attrition Probability (Threshold: 40.0%)"
@@ -377,7 +365,7 @@ with col2:
         if current_acad > 45.0:
             st.markdown("🔴 *Severe credit/grade progression gaps.*")
         else:
-            st.markdown("🟢 *Progress metrics stable.*")
+            st.markdown("🟢 *Progress stable.*")
     with d_col2:
         current_socio = (
             st.session_state.socio_score
@@ -388,7 +376,7 @@ with col2:
         if current_socio > 45.0:
             st.markdown("🔴 *High employment or structural friction.*")
         else:
-            st.markdown("🟢 *Context parameters clear.*")
+            st.markdown("🟢 *Context clear.*")
 
     st.markdown("---")
 
@@ -399,15 +387,15 @@ with col2:
         else (1 if (ects_s1 + ects_s2) < 25 else 0)
     )
     cluster_labels = {
-        0: "Cohort 0: High Academic Progress with Structural Risk Factors",
-        1: "Cohort 1: Moderate Credit Accumulation and Study-Load Risk",
-        2: "Cohort 2: Early Non-Engagement Profile: Younger Male Students",
-        3: "Cohort 3: Employed Student Study-Work Pressure Profile",
-        4: "Cohort 4: International Student Transition and Credit Progress Risk",
-        5: "Cohort 5: BAföG Recipient Financial-Support and Progression Risk",
+        0: "Cluster 0: High Academic Progress with Structural Risk Factors",
+        1: "Cluster 1: Moderate Credit Accumulation and Study-Load Risk",
+        2: "Cluster 2: Early Non-Engagement Profile: Younger Male Students",
+        3: "Cluster 3: Employed Student Study-Work Pressure Profile",
+        4: "Cluster 4: International Student Transition and Credit-Progress Risk",
+        5: "Cluster 5: BAföG Recipient Financial-Support and Progression Risk",
     }
     st.markdown(
-        f"**👥 Assigned Support Intervention Target:** {cluster_labels.get(cluster_id, 'Specialized Framework Segment')}"
+        f"**👥 Assigned Support Intervention Cohort:** {cluster_labels.get(cluster_id, 'Specialized Framework Segment Overview')}"
     )
 
     # ===========================================================================
@@ -481,9 +469,17 @@ with col2:
             )
 
             system_message = (
-                "You are an elite academic compliance officer specializing in higher education retention frameworks. "
-                "Synthesize rigorous, prescriptive advisory strategies directly based on the provided metrics and PO context. "
-                "Output with professional markdown styling."
+                "You are an expert academic advisor specialized in German university examination rules.\n\n"
+                "STRICT ADVISORY REPORTING RULES:\n"
+                "1. State exact qualitative definitions for Sem 1 and Sem 2 separately.\n"
+                "2. Note that 60 ECTS means 1 year of progress completed.\n"
+                "3. If grade number increases, sound a warning flag of performance decline.\n"
+                "4. Use scale: 1.0-1.5 Sehr Gut, 1.6-2.5 Gut, 2.6-3.5 Befriedigend, 3.6-4.0 Ausreichend, >4.0 Nicht ausreichend.\n\n"
+                "CRITICAL OUTPUT STRUCTURE DIRECTIVE:\nDo not write introductions. Output matching this exact markdown format:\n\n"
+                "### 📋 Academic Advisory Assessment Report\n\n"
+                " Academic Standing \n- [Insert classifications]\n\n"
+                " Trend Analysis \n- [Insert trend breakdown]\n\n"
+                " Regulatory Directives \n- [Insert actionable advice]"
             )
 
             user_message = f"""
@@ -519,13 +515,13 @@ with col2:
                 st.markdown(response.choices[0].message.content)
             except Exception as e:
                 st.error(
-                    f"❌ Groq System Exception during RAG generation processing: {str(e)}"
+                    f"❌ Groq Authentication Crash during RAG Generation: {str(e)}"
                 )
 
-            with st.expander("🔎 View Source Clauses [PO Compliance Framework]"):
+            with st.expander("🔎 View Source Clauses [PO-101]"):
                 for i, rule in enumerate(matched_rules, 1):
-                    st.info(f"Source Context Block #{i}: \n{rule}")
+                    st.info(f" Source Context Block #{i}: \n{rule}")
     else:
         st.info(
-            "ℹ️ Fill out student parameters on the left panel and click **Run Prediction & RAG Analysis**."
+            "ℹ️ Fill out student parameters on the left panel and click Run Prediction & RAG Analysis ."
         )
