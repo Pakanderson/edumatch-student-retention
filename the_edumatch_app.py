@@ -156,11 +156,11 @@ with col1:
         )
         ects_s1 = st.number_input("ECTS Credits Earned (Sem 1)", 0, 30, 12)
         grade_s1 = st.slider(
-            "Grade Average (Sem 1) [1.0 Best to 5.0 Fail]", 1.0, 1.5, 5.0, 2.5
+            "Grade Average (Sem 1) [1.0 Best to 5.0 Fail]", 1.0, 5.0, 3.8,0.1
         )
         ects_s2 = st.number_input("ECTS Credits Earned (Sem 2)", 0, 30, 10)
         grade_s2 = st.slider(
-            "Grade Average (Sem 2) [1.0 Best to 5.0 Fail]", 1.0, 1.5, 5.0, 3.5
+            "Grade Average (Sem 2) [1.0 Best to 5.0 Fail]", 1.0, 5.0, 3.8,0.2
         )
 
         submit_btn = st.form_submit_button("🚀 Run Prediction & RAG Analysis")
