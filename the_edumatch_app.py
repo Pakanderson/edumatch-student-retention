@@ -9,7 +9,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from groq import Groq
 
 # ===========================================================================
-# STRUCTURAL INITIALIZATION & SYSTEM GATEWAYS
+# 1. STRUCTURAL INITIALIZATION & SYSTEM GATEWAYS
 # ===========================================================================
 load_dotenv(override=True)
 
@@ -32,48 +32,41 @@ st.set_page_config(
 
 
 # ===========================================================================
-# ASSET PACK LOADING & RAG ENGINE CACHING
+# 2. ASSET PACK LOADING & RAG ENGINE CACHING
 # ===========================================================================
 @st.cache_resource(show_spinner=False)
 def load_all_assets():
     """
     Loads machine learning pipeline artifacts using the correct filenames
-    from your models/ directory.
+    from your models/ directory and builds the TF-IDF local text corpus matrix.
     """
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    # 1. Map filenames to variables
-    # Filename: german_retention_model.pkl -> Variable: model
-    # Filename: scaler.pkl -> Variable: scaler
-    # Filename: kmeans_model.pkl -> Variable: kmeans
-    # Filename: clustering_scaler.pkl -> Variable: scaler_clustering
-    
+
+    # Pre-initialize variables as None to explicitly guarantee they exist for the return statement
+    model, scaler, kmeans, scaler_clustering = None, None, None, None
+    chunks, vectorizer, tfidf_matrix = [], None, None
+
     try:
-        model = joblib.load(os.path.join(base_dir, "models", "german_retention_model.pkl"))
+        model = joblib.load(
+            os.path.join(base_dir, "models", "german_retention_model.pkl")
+        )
         scaler = joblib.load(os.path.join(base_dir, "models", "scaler.pkl"))
         kmeans = joblib.load(os.path.join(base_dir, "models", "kmeans_model.pkl"))
-        scaler_clustering = joblib.load(os.path.join(base_dir, "models", "clustering_scaler.pkl"))
-        
-        # Ensure these are initialized for your RAG/LLM section
-        chunks = [] 
-        vectorizer = None
-        tfidf_matrix = None
-        
-        return model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix
-        
+        scaler_clustering = joblib.load(
+            os.path.join(base_dir, "models", "clustering_scaler.pkl")
+        )
     except Exception as e:
-        st.error(f"❌ Error loading production system files: {e}")
-        return None, None, None, None, [], None, None
-    
-    # Standardized variable names completely aligned to prevent NameError flags
-    return model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix
+        st.error(f"❌ Error loading production system models: {e}")
+
     # --- REGULATORY TEXT INGESTION DISK SCANNER ---
-    chunks = []
-    if os.path.exists("raw_extracted_po.txt"):
-        with open("raw_extracted_po.txt", "r", encoding="utf-8") as f:
+    reg_file = os.path.join(base_dir, "examination_regulations.txt")
+    raw_file = os.path.join(base_dir, "raw_extracted_po.txt")
+
+    if os.path.exists(raw_file):
+        with open(raw_file, "r", encoding="utf-8") as f:
             chunks = [c.strip() for c in f.read().split("\n\n") if c.strip()]
-    elif os.path.exists("examination_regulations.txt"):
-        with open("examination_regulations.txt", "r", encoding="utf-8") as f:
+    elif os.path.exists(reg_file):
+        with open(reg_file, "r", encoding="utf-8") as f:
             chunks = [
                 c.strip() for c in f.read().split("=== CLAUSE START ===") if c.strip()
             ]
@@ -94,13 +87,13 @@ def load_all_assets():
     return model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix
 
 
-# --- UNPACK MASTER RESERIALIZATION PLATFORM ---
+# Unpack variables globally from resource container
 model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix = (
     load_all_assets()
 )
 
 # ===========================================================================
-#  SESSION STATE LIFECYCLE MANAGEMENT
+# 3. SESSION STATE LIFECYCLE MANAGEMENT
 # ===========================================================================
 if "form_key" not in st.session_state:
     st.session_state.form_key = 0
@@ -127,15 +120,18 @@ def clear_inputs():
 
 st.title("🎓 EduMatch: Predictive Student Retention and Prescriptive Analytics")
 
-# Establish layout partitioning instantly prior to capturing state updates
+# Establish main column partitioning layout layout layout
 col1, col2 = st.columns([1, 1.2])
 
 # ===========================================================================
-# ADVISOR REGISTRATION INPUT PANEL (COL1)
+# 4. ADVISOR REGISTRATION INPUT PANEL (COL1)
 # ===========================================================================
 with col1:
     st.header("📋 Advisor Input Panel")
     with st.form(key=f"input_form_{st.session_state.form_key}"):
+
+        # --- Section A: Socio-economic Indicators Group ---
+        st.subheader("Socio-economic Indicators")
 
         gender = st.selectbox("Gender", ["Female", "Male"])
         is_master = st.selectbox(
@@ -159,6 +155,9 @@ with col1:
             ["Stable Housing Structure", "Unstable Accommodation Arrangement"],
         )
 
+        st.markdown("---")  # Visual divider between explicit panels
+
+        # --- Section B: Academic Milestones Group ---
         st.subheader("Academic Milestones")
         ects_s1 = st.number_input("ECTS Credits Earned (Sem 1)", 0, 40, 12)
         grade_s1 = st.slider(
@@ -171,7 +170,7 @@ with col1:
 
         submit_btn = st.form_submit_button("🚀 Run Prediction & RAG Analysis")
 
-    if st.button("🧹 Clear All Inputs"):
+    if st.button("🧹 Clear All Inputs", use_container_width=True):
         clear_inputs()
         st.rerun()
 
@@ -222,17 +221,11 @@ with col1:
                 scaled_km = scaler_clustering.transform(input_df_km)
                 st.session_state.cluster_id = kmeans.predict(scaled_km)[0]
 
-            except KeyError as e:
-                st.error(
-                    f"❌ **Schema Mismatch Error:** Notebook features matrix out of alignment: {e}"
-                )
-                st.stop()
             except Exception as e:
-                st.warning(f"⚠️ Computational calculation trace failure: {e}")
+                st.error(f"Computational transformation array failure: {e}")
                 st.session_state.risk_pct = None
                 st.session_state.cluster_id = 1 if (ects_s1 + ects_s2) < 30 else 0
         else:
-            # Safe heuristics baseline fallback if artifacts are empty or corrupted
             st.session_state.risk_pct = None
             st.session_state.cluster_id = 1 if (ects_s1 + ects_s2) < 30 else 0
 
@@ -294,7 +287,7 @@ with col1:
         st.write(st.session_state.sandbox_response)
 
 # ===========================================================================
-# LIVE RETENTION INTEGRITY ANALYTICS CORE (COL2)
+# 5. LIVE RETENTION INTEGRITY ANALYTICS CORE (COL2)
 # ===========================================================================
 with col2:
     st.header("⚡ Live Analytics Engine")
@@ -349,9 +342,9 @@ with col2:
             final_risk_pct = min(98.5, max(4.5, final_risk_pct))
 
         # Render Alert Interfaces dynamically tracking our mathematical gradients
-        if final_risk_pct >= 40.0:
+        if final_risk_pct >= 35.0:
             st.error(
-                f"### ⚠️ HIGH RETENTION ALERT: **{final_risk_pct:.1f}% Attrition Probability** (Threshold: 40.0%)"
+                f"### ⚠️ HIGH RETENTION ALERT: **{final_risk_pct:.1f}% Attrition Probability** (Tuned Threshold: 35.0%)"
             )
         else:
             st.success(
@@ -359,7 +352,6 @@ with col2:
             )
 
         st.markdown("#### 📊 Risk Driver Deconstruction")
-        st.columns(2)
         sub_col1, sub_col2 = st.columns(2)
 
         with sub_col1:
@@ -385,9 +377,8 @@ with col2:
             )
 
         st.markdown("---")
-        # st.metric(label="Assigned Support Intervention Cohort", value=f"{cluster_id}")
         st.markdown(
-            f"**👥Cohort Profile Focus:** {cluster_labels.get(cluster_id, 'Specialized Framework Segment Overview')}"
+            f"**👥 Cohort Profile Focus:** {cluster_labels.get(cluster_id, 'Specialized Framework Segment Overview')}"
         )
 
         # ===========================================================================
@@ -429,16 +420,8 @@ with col2:
             client = Groq(api_key=GROQ_API_KEY)
             context_payload = "\n\n".join(matched_rules)
 
-            s1_status = (
-                "PASSING"
-                if c["grade_s1"] <= 4.0
-                else "CRITICAL MODULE FAIL (Academic Emergency)"
-            )
-            s2_status = (
-                "PASSING"
-                if c["grade_s2"] <= 4.0
-                else "CRITICAL MODULE FAIL (Academic Emergency)"
-            )
+            s1_status = "PASSING" if c["grade_s1"] <= 4.0 else "CRITICAL MODULE FAIL"
+            s2_status = "PASSING" if c["grade_s2"] <= 4.0 else "CRITICAL MODULE FAIL"
             trend_status = (
                 "STABLE / IMPROVING MARKS"
                 if c["grade_s2"] <= c["grade_s1"]
@@ -488,11 +471,9 @@ with col2:
                     )
                     st.markdown(response.choices[0].message.content)
             except Exception as e:
-                st.error(
-                    f"❌ **Groq Authentication Crash during RAG Generation:** {str(e)}"
-                )
+                st.error(f"❌ **Groq SDK Error:** Generation failed: {str(e)}")
 
-        with st.expander("🔎 View Source Clauses [PO-101]"):
+        with st.expander("🔎 View Source Clauses"):
             for i, rule in enumerate(matched_rules, 1):
                 st.info(f"**Source Context Block #{i}:**\n{rule}")
     else:
