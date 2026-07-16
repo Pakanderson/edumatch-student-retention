@@ -238,6 +238,8 @@ if bafoeg == "No":
     socio_base += 15.0
 socioeconomic_score = min(100.0, socio_base)
 
+calculated_fallback_risk = (academic_score * 0.5) + (socioeconomic_score * 0.5)
+
 if submit_btn:
     st.session_state.cached_student = {
         "bafoeg": bafoeg,
@@ -278,12 +280,10 @@ if submit_btn:
                 scaler_clustering.transform(input_df_km)
             )[0]
         except Exception:
-            st.session_state.risk_pct = (academic_score * 0.5) + (
-                socioeconomic_score * 0.5
-            )
+            st.session_state.risk_pct = calculated_fallback_risk
             st.session_state.cluster_id = 1 if (ects_s1 + ects_s2) < 30 else 0
     else:
-        st.session_state.risk_pct = (academic_score * 0.5) + (socioeconomic_score * 0.5)
+        st.session_state.risk_pct = calculated_fallback_risk
         st.session_state.cluster_id = 1 if (ects_s1 + ects_s2) < 30 else 0
 
 with col1:
@@ -334,7 +334,7 @@ with col1:
 
                 with st.spinner("Synthesizing advice..."):
                     res = client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
+                        model="llama-3.1-8b-instant",  # Safe high-token model
                         messages=[{"role": "user", "content": prompt}],
                     )
                     st.session_state.sandbox_response = res.choices[0].message.content
@@ -347,23 +347,17 @@ with col1:
 # ===========================================================================
 # 6. RENDERING INTERFACE (COL2)
 # ===========================================================================
-
 with col2:
     st.header("⚡ Live Analytics Engine")
-
     if st.session_state.cached_student is not None:
         c = st.session_state.cached_student
         cluster_id = st.session_state.cluster_id
 
-        # --- BREAK THE INTERFACES FREEZE LOCK ---
-        # If session state contains the model's prediction, check if a re-prediction is needed.
-        # To guarantee the presentation never locks on a static value, fall back to live sub-heuristics
-        # if the session state risk score is stuck or out of alignment with the current live indicators.
-        if submit_btn and st.session_state.risk_pct is not None:
+        # Hard target freeze breaker override allocation logic
+        if st.session_state.risk_pct is not None:
             final_risk_pct = st.session_state.risk_pct
         else:
-            # Clean mathematical fallback calculation layer
-            final_risk_pct = (academic_score * 0.5) + (socioeconomic_score * 0.5)
+            final_risk_pct = calculated_fallback_risk
 
         cluster_labels = {
             0: "Cluster 0: High Academic Progress with Structural Risk Factors",
@@ -423,7 +417,6 @@ with col2:
             f"**👥 Cohort Profile Focus:** {cluster_labels.get(cluster_id, 'Specialized Framework Segment')}"
         )
 
-        # ... (Leave the remaining Vector-Matched RAG Advisory logic exactly as-is below this line)
         # ===========================================================================
         # VECTOR-MATCHED RAG ADVISORY GENERATION PLATFORM (SAFE CHECK RE-NESTED)
         # ===========================================================================
@@ -505,7 +498,7 @@ with col2:
                     "LLM synthesizing verified student regulatory advice..."
                 ):
                     response = client.chat.completions.create(
-                        model="llama-3.1-8b-instant",
+                        model="llama-3.1-8b-instant",  # Safe high-token model choice
                         messages=[
                             {"role": "system", "content": system_message},
                             {"role": "user", "content": user_message},
