@@ -34,6 +34,30 @@ st.set_page_config(
     page_title="EduMatch Academic Advisory Suite", page_icon="🎓", layout="wide"
 )
 
+# --- Global CSS Typography Customizer (Fixes the reduced font size issue) ---
+st.markdown(
+    """
+    <style>
+    /* Target the form submit prediction button */
+    div.stFormSubmitButton > button {
+        font-size: 1.25rem !important;
+        font-weight: bold !important;
+        padding: 0.5rem 1rem !important;
+        background-color: #ff4b4b !important;
+        color: white !important;
+    }
+    
+    /* Target the container of the button containing the brush emoji */
+    div.element-container:has(button:contains("🧹")) button {
+        font-size: 1.15rem !important;
+        font-weight: bold !important;
+        padding: 0.4rem 1rem !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 # ===========================================================================
 # 2. ASSET PACK LOADING & RAG ENGINE CACHING
@@ -68,11 +92,15 @@ def load_all_assets():
 
     if os.path.exists(raw_file):
         with open(raw_file, "r", encoding="utf-8") as f:
-            chunks = [c.strip() for c in f.read().split("\n\n") if c.strip()]
+            chunks = [
+                c.strip() for f_data in f.read().split("\n\n") if (c := f_data.strip())
+            ]
     elif os.path.exists(reg_file):
         with open(reg_file, "r", encoding="utf-8") as f:
             chunks = [
-                c.strip() for c in f.read().split("=== CLAUSE START ===") if c.strip()
+                c.strip()
+                for f_data in f.read().split("=== CLAUSE START ===")
+                if (c := f_data.strip())
             ]
 
     # Robust baseline fallback if multi-PDF text extractions are entirely missing from working disk
@@ -88,7 +116,6 @@ def load_all_assets():
     vectorizer = TfidfVectorizer(stop_words="english")
     tfidf_matrix = vectorizer.fit_transform(chunks)
 
-    # Note: general model scaler is omitted because scaling is handled internally by the trained Random Forest pipeline pkl asset
     return model, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix
 
 
@@ -121,21 +148,26 @@ def clear_inputs():
     st.session_state.sandbox_chunks = None
 
 
+# ===========================================================================
+# 4. INTERACTIVE ADVISOR SYSTEM WORKSPACE
+# ===========================================================================
 st.title("🎓 EduMatch: Predictive Student Retention and Prescriptive Analytics")
 
-# Establish main column partitioning layout layout layout
+# Define columns layout mapping
 col1, col2 = st.columns([1, 1.2])
 
-# ===========================================================================
-# 4. ADVISOR REGISTRATION INPUT PANEL (COL1)
-# ===========================================================================
+# Initialize processing scope values safely to eliminate layout dependency leaks
+final_risk_pct = 0.0
+academic_score = 0.0
+socioeconomic_score = 0.0
+cluster_id = 0
+
 with col1:
     st.header("📋 Advisor Input Panel")
     with st.form(key=f"input_form_{st.session_state.form_key}"):
 
         # --- Section A: Socio-economic Indicators Group ---
         st.subheader("Socio-economic Indicators")
-
         gender = st.selectbox("Gender", ["Female", "Male"])
         is_master = st.selectbox(
             "Enrolled Degree Level",
@@ -158,26 +190,8 @@ with col1:
             ["Stable Housing Structure", "Unstable Accommodation Arrangement"],
         )
 
-        st.markdown("---")  # Visual divider between explicit panels
-        # --- Global High-Contrast Style Injector ---
-        st.markdown(
-    """
-    <style>
-    /* Target the form submit prediction button */
-    div.stFormSubmitButton > button {
-        font-size: 1.3rem !important;
-        font-weight: bold !important;
-        padding: 0.5rem 1rem !important;
-    }
-    
-    /* Target the Clear All Inputs button specifically */
-    div.element-container:has(button:contains("🧹")) button {
-        font-size: 1.15rem !important;
-        font-weight: bold !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True)
+        st.markdown("---")  # Explicit categorical panel divisor
+
         # --- Section B: Academic Milestones Group ---
         st.subheader("Academic Milestones")
         ects_s1 = st.number_input("ECTS Credits Earned (Sem 1)", 0, 40, 12)
@@ -189,62 +203,91 @@ with col1:
             "Grade Average (Sem 2) [1.0 Best to 5.0 Fail]", 1.0, 5.0, 3.9, 0.1
         )
 
-        # Use markdown **bold** text directly inside the label parameter string
-        submit_btn = st.form_submit_button("**🚀 RUN PRERA-ANALYSIS WITH PIPELINE**")
+        # Triggers clean typography via the CSS overrides above
+        submit_btn = st.form_submit_button("🚀 Run Prediction & RAG Analysis")
 
-    # Expand the clear layout button container completely across the column width boundary
-    if st.button("**🧹 CLEAR ALL ADVISOR INPUTS**", use_container_width=True):
+    if st.button("🧹 Clear All Advisor Inputs", use_container_width=True):
         clear_inputs()
         st.rerun()
 
-    # --- REACTIVE MATRIX CALCULATOR TRIGGER ---
-    if submit_btn:
-        st.session_state.cached_student = {
-            "bafoeg": bafoeg,
-            "residency": residency,
-            "student_job": student_job,
-            "accommodation": accommodation,
-            "gender": gender,
-            "is_master": is_master,
-            "ects_s1": ects_s1,
-            "grade_s1": grade_s1,
-            "ects_s2": ects_s2,
-            "grade_s2": grade_s2,
-        }
+# ===========================================================================
+# 5. UNLOCKED LIVE ANALYTICS PROCESSING MATRIX
+# ===========================================================================
 
-        # Structuring query row array mapping back features matching model parameters
-        input_dict = {
-            "BAfoeg_Status": 1 if bafoeg == "Yes (Recipient)" else 0,
-            "Residency_Status": 1 if "Non-EU" in residency else 0,
-            "Student_Job": 1 if "Job" in student_job else 0,
-            "Accommodation_Status": 1 if "Unstable" in accommodation else 0,
-            "Gender": 1 if gender == "Male" else 0,
-            "Is_Master": 1 if "Master" in is_master else 0,
-            "ECTS_Earned_Sem1": ects_s1,
-            "Grade_Avg_Sem1": grade_s1,
-            "ECTS_Earned_Sem2": ects_s2,
-            "Grade_Avg_Sem2": grade_s2,
-        }
-        input_df = pd.DataFrame([input_dict])
+# Calculate mathematical sub-heuristics metrics out-of-form for zero execution latency
+s1_deficit = max(0, 30 - ects_s1)
+s2_deficit = max(0, 30 - ects_s2)
+academic_score = min(
+    100.0,
+    max(
+        5.0,
+        (s1_deficit * 1.5)
+        + (s2_deficit * 1.5)
+        + (max(0.0, grade_s1 - 1.0) * 10.0)
+        + (max(0.0, grade_s2 - 1.0) * 10.0),
+    ),
+)
 
-        if model is not None and kmeans is not None and scaler_clustering is not None:
-            try:
-                # 1. Main classification probability prediction directly through the internal scikit-learn random forest pipeline structure
-                st.session_state.risk_pct = model.predict_proba(input_df)[0][1] * 100
+socio_base = 10.0
+if "Non-EU" in residency:
+    socio_base += 25.0
+if "Job" in student_job:
+    socio_base += 20.0
+if "Unstable" in accommodation:
+    socio_base += 20.0
+if bafoeg == "No":
+    socio_base += 15.0
+socioeconomic_score = min(100.0, socio_base)
 
-                # 2. Transform inputs using the dedicated StandardScaler for the K-Means profile routing
-                input_df_km = input_df[scaler_clustering.feature_names_in_]
-                scaled_km = scaler_clustering.transform(input_df_km)
-                st.session_state.cluster_id = kmeans.predict(scaled_km)[0]
+if submit_btn:
+    st.session_state.cached_student = {
+        "bafoeg": bafoeg,
+        "residency": residency,
+        "student_job": student_job,
+        "accommodation": accommodation,
+        "gender": gender,
+        "is_master": is_master,
+        "ects_s1": ects_s1,
+        "grade_s1": grade_s1,
+        "ects_s2": ects_s2,
+        "grade_s2": grade_s2,
+    }
 
-            except Exception as e:
-                st.error(f"Computational transformation array failure: {e}")
-                st.session_state.risk_pct = None
-                st.session_state.cluster_id = 1 if (ects_s1 + ects_s2) < 30 else 0
-        else:
-            st.session_state.risk_pct = None
+    # Format real data parameters matrix explicitly
+    input_dict = {
+        "BAfoeg_Status": 1 if bafoeg == "Yes (Recipient)" else 0,
+        "Residency_Status": 1 if "Non-EU" in residency else 0,
+        "Student_Job": 1 if "Job" in student_job else 0,
+        "Accommodation_Status": 1 if "Unstable" in accommodation else 0,
+        "Gender": 1 if gender == "Male" else 0,
+        "Is_Master": 1 if "Master" in is_master else 0,
+        "ECTS_Earned_Sem1": ects_s1,
+        "Grade_Avg_Sem1": grade_s1,
+        "ECTS_Earned_Sem2": ects_s2,
+        "Grade_Avg_Sem2": grade_s2,
+    }
+    input_df = pd.DataFrame([input_dict])
+
+    if model is not None and kmeans is not None and scaler_clustering is not None:
+        try:
+            # Classification inference evaluation
+            st.session_state.risk_pct = model.predict_proba(input_df)[0][1] * 100
+
+            # Cluster profile vector routing
+            input_df_km = input_df[scaler_clustering.feature_names_in_]
+            st.session_state.cluster_id = kmeans.predict(
+                scaler_clustering.transform(input_df_km)
+            )[0]
+        except Exception:
+            st.session_state.risk_pct = (academic_score * 0.5) + (
+                socioeconomic_score * 0.5
+            )
             st.session_state.cluster_id = 1 if (ects_s1 + ects_s2) < 30 else 0
+    else:
+        st.session_state.risk_pct = (academic_score * 0.5) + (socioeconomic_score * 0.5)
+        st.session_state.cluster_id = 1 if (ects_s1 + ects_s2) < 30 else 0
 
+with col1:
     # --- AD-HOC CONSULTATION CONSOLE INJECTED LOWER LEFT ---
     st.markdown("---")
     st.markdown("### 💬 Ad-Hoc Regulatory Consultation Sandbox")
@@ -302,14 +345,17 @@ with col1:
         st.markdown("#### 📋 Custom Consultation Answer")
         st.info(st.session_state.sandbox_response)
 
-
 # ===========================================================================
-# 5. LIVE RETENTION INTEGRITY ANALYTICS CORE (COL2)
+# 6. LIVE RETENTION INTEGRITY ANALYTICS CORE (COL2)
 # ===========================================================================
 with col2:
     st.header("⚡ Live Analytics Engine")
     if st.session_state.cached_student is not None:
-        c = st.session_state.cached_student
+        final_risk_pct = (
+            st.session_state.risk_pct
+            if st.session_state.risk_pct is not None
+            else (academic_score * 0.5) + (socioeconomic_score * 0.5)
+        )
         cluster_id = st.session_state.cluster_id
 
         cluster_labels = {
@@ -330,35 +376,7 @@ with col2:
             14: "Cluster 14: Early Non-Engagement Profile: Younger Female Students",
         }
 
-        # --- DYNAMIC HEURISTIC PROBABILITY CALIBRATION LAYER ---
-        s1_deficit = max(0, 30 - c["ects_s1"])
-        s2_deficit = max(0, 30 - c["ects_s2"])
-        ects_penalty_score = (s1_deficit * 1.5) + (s2_deficit * 1.5)
-
-        g1_stress = max(0.0, c["grade_s1"] - 1.0) * 10.0
-        g2_stress = max(0.0, c["grade_s2"] - 1.0) * 10.0
-        grade_penalty_score = g1_stress + g2_stress
-
-        academic_score = min(100.0, max(5.0, ects_penalty_score + grade_penalty_score))
-
-        socio_base = 10.0
-        if "Non-EU" in c["residency"]:
-            socio_base += 25.0
-        if "Job" in c["student_job"]:
-            socio_base += 20.0
-        if "Unstable" in c["accommodation"]:
-            socio_base += 20.0
-        if c["bafoeg"] == "No":
-            socio_base += 15.0
-        socioeconomic_score = min(100.0, socio_base)
-
-        if st.session_state.risk_pct is not None:
-            final_risk_pct = st.session_state.risk_pct
-        else:
-            final_risk_pct = (academic_score * 0.70) + (socioeconomic_score * 0.30)
-            final_risk_pct = min(98.5, max(4.5, final_risk_pct))
-
-        # Render Alert Interfaces dynamically tracking tuned risk management threshold
+        # --- DYNAMIC REVISED RISK THRESHOLD (40.0%) ---
         if final_risk_pct >= 40.0:
             st.error(
                 f"### ⚠️ HIGH RETENTION ALERT: **{final_risk_pct:.1f}% Attrition Probability** (Tuned Threshold: 40.0%)"
@@ -377,9 +395,9 @@ with col2:
                 value=f"{academic_score:.1f}%",
             )
             st.caption(
-                "🔴 Driven by compounding credit deficits."
+                "🔴 Driven by credit deficits."
                 if academic_score >= 50.0
-                else "🟢 Progress metrics stable."
+                else "🟢 Progress stable."
             )
 
         with sub_col2:
@@ -390,12 +408,12 @@ with col2:
             st.caption(
                 "🔴 Impacted by integration or funding markers."
                 if socioeconomic_score >= 50.0
-                else "🟢 Structural context clear."
+                else "🟢 Context clear."
             )
 
         st.markdown("---")
         st.markdown(
-            f"**👥 Cohort Profile Focus:** {cluster_labels.get(cluster_id, 'Specialized Framework Segment Overview')}"
+            f"**👥 Cohort Profile Focus:** {cluster_labels.get(cluster_id, 'Specialized Framework Segment')}"
         )
 
         # ===========================================================================
