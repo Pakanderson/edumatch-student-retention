@@ -159,7 +159,25 @@ with col1:
         )
 
         st.markdown("---")  # Visual divider between explicit panels
-
+        # --- Global High-Contrast Style Injector ---
+        st.markdown(
+    """
+    <style>
+    /* Target the form submit prediction button */
+    div.stFormSubmitButton > button {
+        font-size: 1.3rem !important;
+        font-weight: bold !important;
+        padding: 0.5rem 1rem !important;
+    }
+    
+    /* Target the Clear All Inputs button specifically */
+    div.element-container:has(button:contains("🧹")) button {
+        font-size: 1.15rem !important;
+        font-weight: bold !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True)
         # --- Section B: Academic Milestones Group ---
         st.subheader("Academic Milestones")
         ects_s1 = st.number_input("ECTS Credits Earned (Sem 1)", 0, 40, 12)
@@ -171,9 +189,11 @@ with col1:
             "Grade Average (Sem 2) [1.0 Best to 5.0 Fail]", 1.0, 5.0, 3.9, 0.1
         )
 
-        submit_btn = st.form_submit_button("🚀 Run Prediction & RAG Analysis")
+        # Use markdown **bold** text directly inside the label parameter string
+        submit_btn = st.form_submit_button("**🚀 RUN PRERA-ANALYSIS WITH PIPELINE**")
 
-    if st.button("🧹 Clear All Inputs", use_container_width=True):
+    # Expand the clear layout button container completely across the column width boundary
+    if st.button("**🧹 CLEAR ALL ADVISOR INPUTS**", use_container_width=True):
         clear_inputs()
         st.rerun()
 
@@ -339,9 +359,9 @@ with col2:
             final_risk_pct = min(98.5, max(4.5, final_risk_pct))
 
         # Render Alert Interfaces dynamically tracking tuned risk management threshold
-        if final_risk_pct >= 35.0:
+        if final_risk_pct >= 40.0:
             st.error(
-                f"### ⚠️ HIGH RETENTION ALERT: **{final_risk_pct:.1f}% Attrition Probability** (Tuned Threshold: 35.0%)"
+                f"### ⚠️ HIGH RETENTION ALERT: **{final_risk_pct:.1f}% Attrition Probability** (Tuned Threshold: 40.0%)"
             )
         else:
             st.success(
