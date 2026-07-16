@@ -34,7 +34,7 @@ st.set_page_config(
     page_title="EduMatch Academic Advisory Suite", page_icon="🎓", layout="wide"
 )
 
-# --- Global CSS Typography Customizer (Fixes the reduced font size issue) ---
+# --- Global CSS Typography Customizer (Fixes button text size shrinking) ---
 st.markdown(
     """
     <style>
@@ -203,7 +203,6 @@ with col1:
             "Grade Average (Sem 2) [1.0 Best to 5.0 Fail]", 1.0, 5.0, 3.9, 0.1
         )
 
-        # Triggers clean typography via the CSS overrides above
         submit_btn = st.form_submit_button("🚀 Run Prediction & RAG Analysis")
 
     if st.button("🧹 Clear All Advisor Inputs", use_container_width=True):
@@ -211,7 +210,7 @@ with col1:
         st.rerun()
 
 # ===========================================================================
-# 5. UNLOCKED LIVE ANALYTICS PROCESSING MATRIX
+# 5. LIVE RETENTION INTEGRITY ANALYTICS CORE
 # ===========================================================================
 
 # Calculate mathematical sub-heuristics metrics out-of-form for zero execution latency
@@ -346,11 +345,12 @@ with col1:
         st.info(st.session_state.sandbox_response)
 
 # ===========================================================================
-# 6. LIVE RETENTION INTEGRITY ANALYTICS CORE (COL2)
+# 6. RENDERING INTERFACE (COL2)
 # ===========================================================================
 with col2:
     st.header("⚡ Live Analytics Engine")
     if st.session_state.cached_student is not None:
+        c = st.session_state.cached_student
         final_risk_pct = (
             st.session_state.risk_pct
             if st.session_state.risk_pct is not None
@@ -360,7 +360,7 @@ with col2:
 
         cluster_labels = {
             0: "Cluster 0: High Academic Progress with Structural Risk Factors",
-            1: "Cluster 1: Moderate Credit Accumulation and Study-Load Risk",
+            1: "Cluster 1: Moderate Credit Accum accumulation and Study-Load Risk",
             2: "Cluster 2: Early Non-Engagement Profile: Younger Male Students",
             3: "Cluster 3: Employed Student Study-Work Pressure Profile",
             4: "Cluster 4: International Student Transition and Credit-Progress Risk",
@@ -376,7 +376,7 @@ with col2:
             14: "Cluster 14: Early Non-Engagement Profile: Younger Female Students",
         }
 
-        # --- DYNAMIC REVISED RISK THRESHOLD (40.0%) ---
+        # --- PANEL REVISED RISK THRESHOLD (40.0%) ---
         if final_risk_pct >= 40.0:
             st.error(
                 f"### ⚠️ HIGH RETENTION ALERT: **{final_risk_pct:.1f}% Attrition Probability** (Tuned Threshold: 40.0%)"
@@ -417,7 +417,7 @@ with col2:
         )
 
         # ===========================================================================
-        # VECTOR-MATCHED RAG ADVISORY GENERATION PLATFORM
+        # VECTOR-MATCHED RAG ADVISORY GENERATION PLATFORM (SAFE CHECK RE-NESTED)
         # ===========================================================================
         st.markdown("---")
         st.markdown("### 📋 Vector-Matched Examination Regulations (Prüfungsordnung)")
