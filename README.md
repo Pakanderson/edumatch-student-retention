@@ -6,7 +6,7 @@ EduMatch is an end-to-end predictive analytics and advisory dashboard designed t
 
 ---
 
-🚀 **Live App:**  [Streamlit App]([edumatch-student-retention-mrkj5xqccwxjawakfdhzqw.streamlit.app](https://edumatch-student-retention-mrkj5xqccwxjawakfdhzqw.streamlit.app/))
+🚀 **Live App:**  [Streamlit App]([edumatch-student-retention-mrkj5xqccwxjawakfdhzqw.streamlit.app](https://edumatch-student-retention-mrkj5xqccwxjawakfdhzqw.streamlit.app/)
 
 📂 **Source Code:** ` [GitHub Repository](https://github.com/Pakanderson/edumatch-student-retention)`
 
