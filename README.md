@@ -36,7 +36,7 @@ This project enables academic advisors to:
 
 ## 🚀 How to Run
 
-1. **Clone the Repository:** `git clone [repo-link]`
+1. **Clone the Repository:** `git clone [https://github.com/Pakanderson/edumatch-student-retention]`
 2. **Install Dependencies:** `pip install -r requirements.txt`
 3. **Environment Setup:** Create a `.secrets.toml` file and add your `GROQ_API_KEY`.
 4. **Run the Dashboard:** `streamlit run the_edumatch_app.py`
