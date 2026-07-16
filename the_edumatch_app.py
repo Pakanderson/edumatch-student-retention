@@ -9,7 +9,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from groq import Groq
 
 # ===========================================================================
-# 1. STRUCTURAL INITIALIZATION & SYSTEM GATEWAYS
+# STRUCTURAL INITIALIZATION & SYSTEM GATEWAYS
 # ===========================================================================
 load_dotenv(override=True)
 
@@ -32,7 +32,7 @@ st.set_page_config(
 
 
 # ===========================================================================
-# 2. ASSET PACK LOADING & RAG ENGINE CACHING
+# ASSET PACK LOADING & RAG ENGINE CACHING
 # ===========================================================================
 @st.cache_resource(show_spinner=False)
 def load_all_assets():
@@ -56,12 +56,6 @@ def load_all_assets():
         st.success("✅ Production models loaded successfully!")
     except Exception as e:
         st.error(f"❌ Error loading production system files: {e}")
-
-    # Standard TF-IDF compilation
-    # ... (rest of your vectorizer and chunk loading logic)
-
-    # Standardized variable names completely aligned to prevent NameError flags
-    return model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix
 
     # Standard TF-IDF compilation
     # ... (rest of your vectorizer and chunk loading logic)
@@ -99,7 +93,7 @@ model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix = (
 )
 
 # ===========================================================================
-# 3. SESSION STATE LIFECYCLE MANAGEMENT
+#  SESSION STATE LIFECYCLE MANAGEMENT
 # ===========================================================================
 if "form_key" not in st.session_state:
     st.session_state.form_key = 0
@@ -130,15 +124,11 @@ st.title("🎓 EduMatch: Predictive Student Retention and Prescriptive Analytics
 col1, col2 = st.columns([1, 1.2])
 
 # ===========================================================================
-# 4. ADVISOR REGISTRATION INPUT PANEL (COL1)
+# ADVISOR REGISTRATION INPUT PANEL (COL1)
 # ===========================================================================
 with col1:
     st.header("📋 Advisor Input Panel")
-
     with st.form(key=f"input_form_{st.session_state.form_key}"):
-
-        # --- Category 1: Socio-economic Indicators ---
-        st.subheader("Socio-economic Indicators")
 
         gender = st.selectbox("Gender", ["Female", "Male"])
         is_master = st.selectbox(
@@ -162,39 +152,22 @@ with col1:
             ["Stable Housing Structure", "Unstable Accommodation Arrangement"],
         )
 
-        st.markdown("---")  # Visual divider between structural category sections
-
-        # --- Category 2: Academic Milestones ---
         st.subheader("Academic Milestones")
-
-        ects_s1 = st.number_input(
-            "ECTS Credits Earned (Sem 1)", min_value=0, max_value=40, value=12
-        )
+        ects_s1 = st.number_input("ECTS Credits Earned (Sem 1)", 0, 40, 12)
         grade_s1 = st.slider(
-            "Grade Average (Sem 1) [1.0 Best to 5.0 Fail]",
-            min_value=1.0,
-            max_value=5.0,
-            value=3.8,
-            step=0.1,
+            "Grade Average (Sem 1) [1.0 Best to 5.0 Fail]", 1.0, 5.0, 3.8, 0.1
         )
-        ects_s2 = st.number_input(
-            "ECTS Credits Earned (Sem 2)", min_value=0, max_value=40, value=10
-        )
+        ects_s2 = st.number_input("ECTS Credits Earned (Sem 2)", 0, 40, 10)
         grade_s2 = st.slider(
-            "Grade Average (Sem 2) [1.0 Best to 5.0 Fail]",
-            min_value=1.0,
-            max_value=5.0,
-            value=3.9,
-            step=0.1,
+            "Grade Average (Sem 2) [1.0 Best to 5.0 Fail]", 1.0, 5.0, 3.9, 0.1
         )
 
-        # --- Form Submission Action ---
         submit_btn = st.form_submit_button("🚀 Run Prediction & RAG Analysis")
 
-    # --- Out-of-Form Session Management ---
-    if st.button("🧹 Clear All Inputs", use_container_width=True):
+    if st.button("🧹 Clear All Inputs"):
         clear_inputs()
         st.rerun()
+
     # --- REACTIVE MATRIX CALCULATOR TRIGGER ---
     if submit_btn:
         st.session_state.cached_student = {
@@ -314,7 +287,7 @@ with col1:
         st.write(st.session_state.sandbox_response)
 
 # ===========================================================================
-# 5. LIVE RETENTION INTEGRITY ANALYTICS CORE (COL2)
+# LIVE RETENTION INTEGRITY ANALYTICS CORE (COL2)
 # ===========================================================================
 with col2:
     st.header("⚡ Live Analytics Engine")
@@ -405,13 +378,13 @@ with col2:
             )
 
         st.markdown("---")
-        #st.metric(label="Assigned Support Intervention Cohort", value=f"{cluster_id}")
+        # st.metric(label="Assigned Support Intervention Cohort", value=f"{cluster_id}")
         st.markdown(
             f"**👥Cohort Profile Focus:** {cluster_labels.get(cluster_id, 'Specialized Framework Segment Overview')}"
         )
 
         # ===========================================================================
-        # 6. VECTOR-MATCHED RAG ADVISORY GENERATION PLATFORM
+        # VECTOR-MATCHED RAG ADVISORY GENERATION PLATFORM
         # ===========================================================================
         st.markdown("---")
         st.markdown("### 📋 Vector-Matched Examination Regulations (Prüfungsordnung)")
