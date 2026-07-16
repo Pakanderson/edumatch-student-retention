@@ -473,7 +473,7 @@ with col2:
                     "LLM synthesizing verified student regulatory advice..."
                 ):
                     response = client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
+                        model="llama-3.1-8b-instant",
                         messages=[
                             {"role": "system", "content": system_message},
                             {"role": "user", "content": user_message},
