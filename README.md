@@ -51,10 +51,6 @@ This project enables academic advisors to:
 
 This pipeline provides university advisors with a "glass-box" tool that bridges the gap between raw data and human empathy. By automating the technical detection of risk and the retrieval of relevant policies, advisors can spend more time on meaningful student interaction.
 
-🚀 **Live App:** https://your-app-name.streamlit.app/
-
-📂 **Source Code:** https://github.com/yourusername/your-repository
-
-## Dashboard Preview
+Dashboard Preview
 
 ![1784183286864](image/README/1784183286864.png)
