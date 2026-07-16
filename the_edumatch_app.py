@@ -37,27 +37,28 @@ st.set_page_config(
 @st.cache_resource(show_spinner=False)
 def load_all_assets():
     """
-    Loads machine learning pipeline artifacts, scalers, and text chunks,
-    automatically fitting text structures for out-of-sample RAG queries.
+    Loads machine learning pipeline artifacts dynamically using
+    absolute path resolution relative to this script's location.
     """
-    model, scaler, kmeans, scaler_clustering = None, None, None, None
+    # Get the directory where app.py actually lives
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Construct robust paths
+    model_path = os.path.join(base_dir, "models", "german_retention_model.pkl")
+    scaler_path = os.path.join(base_dir, "models", "scaler.pkl")
+    kmeans_path = os.path.join(base_dir, "models", "kmeans_model.pkl")
+
+    model, scaler, kmeans = None, None, None
     try:
-        # Load the Supervised Random Forest Classifier Model
-        model = joblib.load("models/german_retention_model.pkl")
-
-        # Load the primary pipeline RobustScaler used for the main dataset split
-        scaler = joblib.load("models/clustering scaler.pkl")
-
-        # Load the Unsupervised K-Means Segmentation Model
-        kmeans = joblib.load("models/kmeans_model.pkl")
-
-        # Load the dedicated sub-scaler used for K-Means distance calculations
-        scaler_clustering = joblib.load("models/clustering_scaler.pkl")
-
+        model = joblib.load(model_path)
+        scaler = joblib.load(scaler_path)
+        kmeans = joblib.load(kmeans_path)
+        st.success("✅ Production models loaded successfully!")
     except Exception as e:
-        st.error(
-            f"❌ Error loading production system files from models/ directory: {e}"
-        )
+        st.error(f"❌ Error loading production system files: {e}")
+
+    # Standard TF-IDF compilation
+    # ... (rest of your vectorizer and chunk loading logic)
 
     # --- REGULATORY TEXT INGESTION DISK SCANNER ---
     chunks = []
@@ -128,7 +129,8 @@ col1, col2 = st.columns([1, 1.2])
 with col1:
     st.header("📋 Advisor Input Panel")
     with st.form(key=f"input_form_{st.session_state.form_key}"):
-
+        st.sidebar.markdown("---") # Optional: clean visual divider line
+        st.sidebar.subheader("Socio-economic Indicators")
         gender = st.selectbox("Gender", ["Female", "Male"])
         is_master = st.selectbox(
             "Enrolled Degree Level",

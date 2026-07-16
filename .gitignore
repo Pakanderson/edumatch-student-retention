@@ -3,8 +3,8 @@
 .streamlit/
 
 # Ignore heavy Machine Learning pkl assets
-models/*.pkl
-*.joblib
+# models/*.pkl
+# *.joblib
 
 # Python caching
 __pycache__/
