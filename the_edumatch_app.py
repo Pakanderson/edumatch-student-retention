@@ -15,10 +15,14 @@ load_dotenv(override=True)
 
 # Bulk-strip any trailing spaces, quotes, or shell artifacts from your API Key safely
 raw_key = os.environ.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
+if not raw_key and "GROQ_API_KEY" in st.secrets:
+    raw_key = st.secrets["GROQ_API_KEY"]
+
 GROQ_API_KEY = None
 if raw_key:
     GROQ_API_KEY = (
-        raw_key.strip()
+        str(raw_key)
+        .strip()
         .replace('"', "")
         .replace("'", "")
         .replace("\r", "")
@@ -37,20 +41,20 @@ st.set_page_config(
 @st.cache_resource(show_spinner=False)
 def load_all_assets():
     """
-    Loads machine learning pipeline artifacts using the correct filenames
-    from your models/ directory and builds the TF-IDF local text corpus matrix.
+    Loads machine learning pipeline artifacts using the exact filenames on disk
+    and builds the TF-IDF local text corpus matrix for RAG.
     """
     base_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Pre-initialize variables as None to explicitly guarantee they exist for the return statement
-    model, scaler, kmeans, scaler_clustering = None, None, None, None
+    model, kmeans, scaler_clustering = None, None, None
     chunks, vectorizer, tfidf_matrix = [], None, None
 
     try:
+        # Load only the 3 files structurally validated on your disk
         model = joblib.load(
             os.path.join(base_dir, "models", "german_retention_model.pkl")
         )
-        scaler = joblib.load(os.path.join(base_dir, "models", "scaler.pkl"))
         kmeans = joblib.load(os.path.join(base_dir, "models", "kmeans_model.pkl"))
         scaler_clustering = joblib.load(
             os.path.join(base_dir, "models", "clustering_scaler.pkl")
@@ -84,13 +88,12 @@ def load_all_assets():
     vectorizer = TfidfVectorizer(stop_words="english")
     tfidf_matrix = vectorizer.fit_transform(chunks)
 
-    return model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix
+    # Note: general model scaler is omitted because scaling is handled internally by the trained Random Forest pipeline pkl asset
+    return model, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix
 
 
 # Unpack variables globally from resource container
-model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix = (
-    load_all_assets()
-)
+model, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix = load_all_assets()
 
 # ===========================================================================
 # 3. SESSION STATE LIFECYCLE MANAGEMENT
@@ -204,17 +207,10 @@ with col1:
         }
         input_df = pd.DataFrame([input_dict])
 
-        if (
-            model is not None
-            and scaler is not None
-            and kmeans is not None
-            and scaler_clustering is not None
-        ):
+        if model is not None and kmeans is not None and scaler_clustering is not None:
             try:
-                # 1. Transform inputs using RobustScaler for the main classification probability
-                input_df_rf = input_df[scaler.feature_names_in_]
-                scaled_rf = scaler.transform(input_df_rf)
-                st.session_state.risk_pct = model.predict_proba(scaled_rf)[0][1] * 100
+                # 1. Main classification probability prediction directly through the internal scikit-learn random forest pipeline structure
+                st.session_state.risk_pct = model.predict_proba(input_df)[0][1] * 100
 
                 # 2. Transform inputs using the dedicated StandardScaler for the K-Means profile routing
                 input_df_km = input_df[scaler_clustering.feature_names_in_]
@@ -244,7 +240,7 @@ with col1:
     if ask_button and custom_question:
         if not GROQ_API_KEY:
             st.error(
-                "❌ **LLM Configuration Error:** Missing `GROQ_API_KEY` system definition token inside environment keys."
+                "❌ **LLM Configuration Error:** Missing `GROQ_API_KEY` definition token inside secrets dashboard."
             )
         else:
             c = (
@@ -283,8 +279,9 @@ with col1:
 
     if st.session_state.sandbox_response is not None:
         st.markdown("---")
-        st.success("#### 📋 Custom Consultation Answer")
-        st.write(st.session_state.sandbox_response)
+        st.markdown("#### 📋 Custom Consultation Answer")
+        st.info(st.session_state.sandbox_response)
+
 
 # ===========================================================================
 # 5. LIVE RETENTION INTEGRITY ANALYTICS CORE (COL2)
@@ -341,7 +338,7 @@ with col2:
             final_risk_pct = (academic_score * 0.70) + (socioeconomic_score * 0.30)
             final_risk_pct = min(98.5, max(4.5, final_risk_pct))
 
-        # Render Alert Interfaces dynamically tracking our mathematical gradients
+        # Render Alert Interfaces dynamically tracking tuned risk management threshold
         if final_risk_pct >= 35.0:
             st.error(
                 f"### ⚠️ HIGH RETENTION ALERT: **{final_risk_pct:.1f}% Attrition Probability** (Tuned Threshold: 35.0%)"
