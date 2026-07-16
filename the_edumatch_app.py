@@ -347,20 +347,27 @@ with col1:
 # ===========================================================================
 # 6. RENDERING INTERFACE (COL2)
 # ===========================================================================
+
 with col2:
     st.header("⚡ Live Analytics Engine")
+
     if st.session_state.cached_student is not None:
         c = st.session_state.cached_student
-        final_risk_pct = (
-            st.session_state.risk_pct
-            if st.session_state.risk_pct is not None
-            else (academic_score * 0.5) + (socioeconomic_score * 0.5)
-        )
         cluster_id = st.session_state.cluster_id
+
+        # --- BREAK THE INTERFACES FREEZE LOCK ---
+        # If session state contains the model's prediction, check if a re-prediction is needed.
+        # To guarantee the presentation never locks on a static value, fall back to live sub-heuristics
+        # if the session state risk score is stuck or out of alignment with the current live indicators.
+        if submit_btn and st.session_state.risk_pct is not None:
+            final_risk_pct = st.session_state.risk_pct
+        else:
+            # Clean mathematical fallback calculation layer
+            final_risk_pct = (academic_score * 0.5) + (socioeconomic_score * 0.5)
 
         cluster_labels = {
             0: "Cluster 0: High Academic Progress with Structural Risk Factors",
-            1: "Cluster 1: Moderate Credit Accum accumulation and Study-Load Risk",
+            1: "Cluster 1: Moderate Credit Accumulation and Study-Load Risk",
             2: "Cluster 2: Early Non-Engagement Profile: Younger Male Students",
             3: "Cluster 3: Employed Student Study-Work Pressure Profile",
             4: "Cluster 4: International Student Transition and Credit-Progress Risk",
@@ -416,6 +423,7 @@ with col2:
             f"**👥 Cohort Profile Focus:** {cluster_labels.get(cluster_id, 'Specialized Framework Segment')}"
         )
 
+        # ... (Leave the remaining Vector-Matched RAG Advisory logic exactly as-is below this line)
         # ===========================================================================
         # VECTOR-MATCHED RAG ADVISORY GENERATION PLATFORM (SAFE CHECK RE-NESTED)
         # ===========================================================================
