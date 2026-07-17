@@ -53,4 +53,4 @@ This pipeline provides university advisors with a "glass-box" tool that bridges 
 
 Dashboard Preview
 
-![1784183286864](image/README/1784183286864.png)
+![1784273682868](image/README/1784273682868.png)
