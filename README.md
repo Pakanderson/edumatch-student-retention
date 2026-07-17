@@ -4,11 +4,13 @@
 
 EduMatch is an end-to-end predictive analytics and advisory dashboard designed to combat early student attrition. By combining machine learning (supervised classification and unsupervised clustering) with Retrieval-Augmented Generation (RAG), EduMatch transitions educational institutions from reactive "post-failure" monitoring to proactive, policy-backed student support.
 
----
+🚀 Links & Deployment
 
-🚀 **Live App:**  [Streamlit App]([edumatch-student-retention-mrkj5xqccwxjawakfdhzqw.streamlit.app](https://edumatch-student-retention-mrkj5xqccwxjawakfdhzqw.streamlit.app/)
+📥 **Live Application Dashboard:** [EduMatch Streamlit App](https://edumatch-student-retention-mrkj5xqccwxjawakfdhzqw.streamlit.app/)
 
-📂 **Source Code:** ` [GitHub Repository](https://github.com/Pakanderson/edumatch-student-retention)`
+📂 **Source Code Repository:** [GitHub Repository](https://github.com/Pakanderson/edumatch-student-retention)
+
+
 
 This project enables academic advisors to:
 
