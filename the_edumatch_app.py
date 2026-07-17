@@ -37,7 +37,7 @@ st.markdown(
     /* 1. Center the master application title */
     h1 {
         text-align: center !important;
-        font-size: 2.25rem !important;
+        font-size: 2.55rem !important;
         padding-bottom: 1rem !important;
     }
     
