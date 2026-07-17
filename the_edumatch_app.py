@@ -43,12 +43,12 @@ st.markdown(
     
     /* 2. Global presentation font scaling for compact viewing */
     html, body, [data-testid="stWidgetLabel"] p, .stSelectbox div, .stMarkdown p {
-        font-size: 1.25rem !important;
+        font-size: 1.55rem !important;
     }
     
     /* 3. Subheader emphasis */
     h3, h4 {
-        font-size: 1.4rem !important;
+        font-size: 1.5rem !important;
         font-weight: bold !important;
     }
 
@@ -56,7 +56,7 @@ st.markdown(
     .stFormSubmitButton > button {
         background-color: #2e7d32 !important; 
         color: white !important;              
-        font-size: 1.25rem !important;
+        font-size: 1.35rem !important;
         font-weight: bold !important;
         height: 3em !important;
         width: 100% !important;
