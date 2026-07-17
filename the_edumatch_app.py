@@ -349,7 +349,7 @@ with col2:
 
         # --- DOMAIN-EXPERT HARD OVERRIDE LAYER ---
         # Safeguards top-performing profiles from outlier model inflation
-        if c["grade_s1"] <= 1.5 and c["grade_s2"] <= 1.5:
+        if c["grade_s1"] <= 2.0 and c["grade_s2"] <= 2.0:
             final_risk_pct = min(final_risk_pct, 25.0)
 
         # Render Alert Interfaces dynamically tracking our mathematical gradients
