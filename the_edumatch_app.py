@@ -37,13 +37,13 @@ st.markdown(
     /* 1. Center the master application title */
     h1 {
         text-align: center !important;
-        font-size: 2.55rem !important;
+        font-size: 3.25rem !important;
         padding-bottom: 1rem !important;
     }
     
     /* 2. Global presentation font scaling for compact viewing */
     html, body, [data-testid="stWidgetLabel"] p, .stSelectbox div, .stMarkdown p {
-        font-size: 1.15rem !important;
+        font-size: 1.25rem !important;
     }
     
     /* 3. Subheader emphasis */
