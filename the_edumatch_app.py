@@ -30,14 +30,32 @@ st.set_page_config(
     page_title="EduMatch Academic Advisory Suite", page_icon="🎓", layout="wide"
 )
 
-#  CSS INJECTION 
+#  PREMIUM DASHBOARD VISUAL ENGINE: CENTRALIZED CSS 
 st.markdown(
     """
 <style>
-    /* target and style the main prediction submit button inside the form container */
+    /* 1. Center the master application title */
+    h1 {
+        text-align: center !important;
+        font-size: 2.25rem !important;
+        padding-bottom: 1rem !important;
+    }
+    
+    /* 2. Global presentation font scaling for compact viewing */
+    html, body, [data-testid="stWidgetLabel"] p, .stSelectbox div, .stMarkdown p {
+        font-size: 1.15rem !important;
+    }
+    
+    /* 3. Subheader emphasis */
+    h3, h4 {
+        font-size: 1.4rem !important;
+        font-weight: bold !important;
+    }
+
+    /* 4. Target and style the main prediction submit button inside the form container */
     .stFormSubmitButton > button {
-        background-color: #2e7d32 !important; /* Premium Green */
-        color: white !important;              /* Button text color */
+        background-color: #2e7d32 !important; 
+        color: white !important;              
         font-size: 1.25rem !important;
         font-weight: bold !important;
         height: 3em !important;
@@ -45,10 +63,8 @@ st.markdown(
         border-radius: 8px !important;
         border: none !important;
     }
-
-    /* hover effect for presentation finish */
     .stFormSubmitButton > button:hover {
-        background-color: #1b5e20 !important; /* Slightly darker green on hover */
+        background-color: #1b5e20 !important; 
         color: #ffffff !important;
     }
 </style>
