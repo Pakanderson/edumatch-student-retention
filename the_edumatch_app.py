@@ -154,11 +154,11 @@ with col1:
             "Enrolled Degree Level",
             ["Bachelor Level Degree Program", "Master Level Degree program"],
         )
-        ects_s1 = st.number_input("ECTS Credits Earned (Sem 1)", 0, 40, 12)
+        ects_s1 = st.number_input("ECTS Credits Earned (Sem 1)", 0, 30, 12)
         grade_s1 = st.slider(
             "Grade Average (Sem 1) [1.0 Best to 5.0 Fail]", 1.0, 5.0, 3.8, 0.1
         )
-        ects_s2 = st.number_input("ECTS Credits Earned (Sem 2)", 0, 40, 10)
+        ects_s2 = st.number_input("ECTS Credits Earned (Sem 2)", 0, 30, 10)
         grade_s2 = st.slider(
             "Grade Average (Sem 2) [1.0 Best to 5.0 Fail]", 1.0, 5.0, 3.9, 0.1
         )
@@ -353,9 +353,9 @@ with col2:
             final_risk_pct = min(final_risk_pct, 25.0)
 
         # Render Alert Interfaces dynamically tracking our mathematical gradients
-        if final_risk_pct >= 40.0:
+        if final_risk_pct >= 45.0:
             st.error(
-                f"### ⚠️ HIGH RETENTION ALERT: **{final_risk_pct:.1f}% Attrition Probability** (Threshold: 40.0%)"
+                f"### ⚠️ HIGH RETENTION ALERT: **{final_risk_pct:.1f}% Attrition Probability** (Threshold: 45.0%)"
             )
         else:
             st.success(
