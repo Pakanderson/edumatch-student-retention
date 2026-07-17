@@ -30,6 +30,31 @@ st.set_page_config(
     page_title="EduMatch Academic Advisory Suite", page_icon="🎓", layout="wide"
 )
 
+#  CSS INJECTION 
+st.markdown(
+    """
+<style>
+    /* target and style the main prediction submit button inside the form container */
+    .stFormSubmitButton > button {
+        background-color: #2e7d32 !important; /* Premium Green */
+        color: white !important;              /* Button text color */
+        font-size: 1.25rem !important;
+        font-weight: bold !important;
+        height: 3em !important;
+        width: 100% !important;
+        border-radius: 8px !important;
+        border: none !important;
+    }
+
+    /* hover effect for presentation finish */
+    .stFormSubmitButton > button:hover {
+        background-color: #1b5e20 !important; /* Slightly darker green on hover */
+        color: #ffffff !important;
+    }
+</style>
+""",
+    unsafe_allow_html=True,
+)
 
 # ===========================================================================
 # ASSET PACK LOADING & RAG ENGINE CACHING
