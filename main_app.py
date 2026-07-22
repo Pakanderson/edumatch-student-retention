@@ -157,14 +157,22 @@ with col2:
             socio_base += 15.0
         socioeconomic_score = min(100.0, socio_base)
 
-        # 2. Synchronized Final Risk Calculation
+        # 2. Weighted Attrition Risk Calculation
+        # Dynamic 60% Academic / 40% Socioeconomic weighting
         heuristic_risk = (academic_score * 0.60) + (socioeconomic_score * 0.40)
 
         if st.session_state.risk_pct is not None:
-            # Blend ML model prediction with heuristic drivers to avoid extreme wild spikes
+            # Blend ML model prediction with heuristic drivers safely
             final_risk_pct = (st.session_state.risk_pct * 0.5) + (heuristic_risk * 0.5)
         else:
             final_risk_pct = heuristic_risk
+
+        # 3. Proportional Grade Shield (Proactive scaling instead of hard clamp)
+        # Excellent grades (<= 1.5) apply a soft 15% mitigation instead of hard-locking to 25%
+        if c["grade_s1"] <= 1.5 and c["grade_s2"] <= 1.5:
+            final_risk_pct = final_risk_pct * 0.85
+
+        final_risk_pct = min(98.5, max(4.5, final_risk_pct))
 
         # 3. DOMAIN GUARDRALL SHIELD: Hard-cap overall risk if driver sub-scores are low/stable
         if academic_score < 30.0 and socioeconomic_score < 50.0:
