@@ -151,7 +151,7 @@ if submit_btn:
     st.rerun()
 
         # Store input selections into session state so returning to this page retains all choices
-        st.session_state.cached_student = {
+st.session_state.cached_student = {
             "bafoeg": bafoeg,
             "residency": residency,
             "student_job": student_job,
@@ -164,7 +164,7 @@ if submit_btn:
             "grade_s2": grade_s2,
         }
 
-        input_dict = {
+input_dict = {
             "BAfoeg_Status": 1 if bafoeg == "Yes (Recipient)" else 0,
             "Residency_Status": 1 if "Non-EU" in residency else 0,
             "Student_Job": 1 if "Job" in student_job else 0,
@@ -176,9 +176,9 @@ if submit_btn:
             "ECTS_Earned_Sem2": ects_s2,
             "Grade_Avg_Sem2": grade_s2,
         }
-        input_df = pd.DataFrame([input_dict])
+input_df = pd.DataFrame([input_dict])
 
-        if (
+if (
             model is not None
             and scaler is not None
             and kmeans is not None
@@ -197,6 +197,7 @@ if submit_btn:
                 st.session_state.risk_pct = None
                 st.session_state.cluster_id = 1 if (ects_s1 + ects_s2) < 30 else 0
         else:
+            # Fallback when models/scalers aren't loaded
             st.session_state.risk_pct = None
             st.session_state.cluster_id = 1 if (ects_s1 + ects_s2) < 30 else 0
 
