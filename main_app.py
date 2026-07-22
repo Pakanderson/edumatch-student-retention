@@ -135,7 +135,7 @@ with col2:
         c = st.session_state.cached_student
         cluster_id = st.session_state.cluster_id
 
-        # --- DYNAMIC HEURISTIC PROBABILITY CALIBRATION LAYER ---
+        # 1. Compute Driver Metrics
         s1_deficit = max(0, 30 - c["ects_s1"])
         s2_deficit = max(0, 30 - c["ects_s2"])
         ects_penalty_score = (s1_deficit * 1.5) + (s2_deficit * 1.5)
@@ -157,16 +157,24 @@ with col2:
             socio_base += 15.0
         socioeconomic_score = min(100.0, socio_base)
 
-        if st.session_state.risk_pct is not None:
-            final_risk_pct = st.session_state.risk_pct
-        else:
-            final_risk_pct = (academic_score * 0.70) + (socioeconomic_score * 0.30)
-            final_risk_pct = min(98.5, max(4.5, final_risk_pct))
+        # 2. Synchronized Final Risk Calculation
+        heuristic_risk = (academic_score * 0.60) + (socioeconomic_score * 0.40)
 
-        if c["grade_s1"] <= 2.0 and c["grade_s2"] <= 2.0:
+        if st.session_state.risk_pct is not None:
+            # Blend ML model prediction with heuristic drivers to avoid extreme wild spikes
+            final_risk_pct = (st.session_state.risk_pct * 0.5) + (heuristic_risk * 0.5)
+        else:
+            final_risk_pct = heuristic_risk
+
+        # 3. DOMAIN GUARDRALL SHIELD: Hard-cap overall risk if driver sub-scores are low/stable
+        if academic_score < 30.0 and socioeconomic_score < 50.0:
+            final_risk_pct = min(final_risk_pct, 28.0)
+        elif c["grade_s1"] <= 2.0 or c["grade_s2"] <= 2.0:
             final_risk_pct = min(final_risk_pct, 25.0)
 
-        # Status Displays
+        final_risk_pct = min(98.5, max(4.5, final_risk_pct))
+
+        # 4. Dynamic Banner Output
         if final_risk_pct >= 45.0:
             st.error(
                 f"### ⚠️ HIGH RETENTION ALERT: **{final_risk_pct:.1f}% Attrition Probability** (Threshold: 45.0%)"
@@ -196,7 +204,7 @@ with col2:
                 value=f"{socioeconomic_score:.1f}%",
             )
             st.caption(
-                "🔴 Impacted by integration or funding markers."
+                "🔴 Impacted by work limits or funding."
                 if socioeconomic_score >= 50.0
                 else "🟢 Structural context clear."
             )
@@ -205,8 +213,10 @@ with col2:
         st.markdown(
             f"**👥 Cohort Profile Focus:** {CLUSTER_LABELS.get(cluster_id, 'Specialized Framework Segment Overview')}"
         )
-        
-        st.info("💡 **Next Step:** Select **02 Policy Advisory** in the sidebar menu to view RAG regulatory reports and engage in custom policy consultations.")
+
+        st.info(
+            "💡 **Next Step:** Select **02 Policy Advisory** in the sidebar menu to view RAG regulatory reports."
+        )
     else:
         st.info(
             "ℹ️ Fill out student parameters on the left panel and click **Run Prediction & Live Analytics**."
