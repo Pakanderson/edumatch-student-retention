@@ -15,3 +15,16 @@ __pycache__/
 .vscode/
 .idea/
 .DS_Store
+# Local secret files
+.env
+.streamlit/secrets.toml
+
+# Heavy model files (only if downloading dynamically or exceeding GitHub limits)
+# models/*.pkl
+
+# Cache
+__pycache__/
+*.pyc
+.DS_Store
+.vscode/
+.idea/

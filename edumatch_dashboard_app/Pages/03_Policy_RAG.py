@@ -1,32 +1,164 @@
+import numpy as np
 import streamlit as st
+from sklearn.metrics.pairwise import cosine_similarity
 from groq import Groq
-import streamlit as st
-from utils import apply_custom_styles
-import streamlit as st
-from utils import apply_custom_styles, load_all_assets
+from utils import (
+    apply_custom_styles,
+    load_all_assets,
+    get_groq_api_key,
+    init_session_state,
+)
 
-# 1. Apply styles immediately
+st.set_page_config(page_title="Policy RAG & Briefing", page_icon="📋", layout="wide")
+
 apply_custom_styles()
+init_session_state()
 
-# 2. Load assets (this will only run once and then use the cache)
-model, scaler, kmeans = load_all_assets()
+model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix = (
+    load_all_assets()
+)
+GROQ_API_KEY = get_groq_api_key()
 
-# Call this immediately after st.set_page_config
-apply_custom_styles()
+st.title("📋 Policy RAG & Advisory Guidance")
 
-st.title("🎓 EduMatch Dashboard")
-# The rest of your page code...
+if st.session_state.cached_student is not None:
+    c = st.session_state.cached_student
 
-st.set_page_config(page_title="Policy Brief", layout="wide")
+    queries = []
+    if "Job" in c["student_job"]:
+        queries.append(
+            "fees tuition unpaid arrears payment deadline part time extension"
+        )
+    if c["ects_s1"] < 15 or c["ects_s2"] < 15:
+        queries.append(
+            "failed exam credit point minimum threshold or losing examination rights progress limits"
+        )
+    if c["grade_s1"] > 3.5 or c["grade_s2"] > 3.5:
+        queries.append(
+            "failed attempt repetition of examination grading scale fail attempts"
+        )
 
-st.title("⚖️ Regulatory RAG Brief")
+    query_text = (
+        " ".join([q for q in queries if q])
+        or "standard admission requirements standing extension regulations"
+    )
+    scores = cosine_similarity(
+        vectorizer.transform([query_text]), tfidf_matrix
+    ).flatten()
+    top_idx = np.argsort(scores)[::-1]
 
-if st.session_state.student_data:
-    # 1. Retrieve RAG chunks (use the logic from your original code)
-    # 2. Call Groq LLM
-    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-    # ... add your generation logic ...
-    st.subheader("Intervention Directive")
-    st.markdown("LLM response goes here with enlarged fonts...")
+    matched_rules = [
+        chunks[i][:1500] + "..." if len(chunks[i]) > 1500 else chunks[i]
+        for i in top_idx[:2]
+        if scores[i] >= 0.05
+    ]
+
+    if matched_rules and GROQ_API_KEY:
+        client = Groq(api_key=GROQ_API_KEY)
+        context_payload = "\n\n".join(matched_rules)
+
+        s1_status = (
+            "PASSING"
+            if c["grade_s1"] <= 4.0
+            else "CRITICAL MODULE FAIL (Academic Emergency)"
+        )
+        s2_status = (
+            "PASSING"
+            if c["grade_s2"] <= 4.0
+            else "CRITICAL MODULE FAIL (Academic Emergency)"
+        )
+        trend_status = (
+            "STABLE / IMPROVING MARKS"
+            if c["grade_s2"] <= c["grade_s1"]
+            else "WORSENING GRADIENT DIRECTION"
+        )
+
+        system_message = (
+            "You are an expert academic advisor specialized in German university examination rules.\n\n"
+            "STRICT ADVISORY REPORTING RULES:\n"
+            "1. State exact qualitative definitions for Sem 1 and Sem 2 separately.\n"
+            "2. Note that 60 ECTS means 1 year of progress completed.\n"
+            "3. If grade number increases, sound a warning flag of performance decline.\n"
+            "4. Use scale: 1.0-1.5 Sehr Gut, 1.6-2.5 Gut, 2.6-3.5 Befriedigend, 3.6-4.0 Ausreichend, >4.0 Nicht ausreichend.\n\n"
+            "CRITICAL OUTPUT STRUCTURE DIRECTIVE:\nDo not write introductions. Output matching this exact markdown format:\n\n"
+            "### 📋 Academic Advisory Assessment Report\n\n"
+            "**Academic Standing**\n- [Insert classifications]\n\n"
+            "**Trend Analysis**\n- [Insert trend breakdown]\n\n"
+            "**Regulatory Directives**\n- [Insert actionable advice]"
+        )
+
+        user_message = f"""
+<STUDENT_METRICS>
+- Student Classification: {c['residency']}
+- Employment Job Status: {c['student_job']}
+- Total Combined Earned ECTS: {c['ects_s1'] + c['ects_s2']} points
+- Semester 1 Numeric Grade: {c['grade_s1']} -> Evaluated Stand: {s1_status}
+- Semester 2 Numeric Grade: {c['grade_s2']} -> Evaluated Stand: {s2_status}
+- Performance Trend Direction: {trend_status}
+</STUDENT_METRICS>
+
+<REGULATORY_CONTEXT_BLOCKS>
+{context_payload}
+</REGULATORY_CONTEXT_BLOCKS>
+"""
+        try:
+            with st.spinner("LLM synthesizing verified student regulatory advice..."):
+                response = client.chat.completions.create(
+                    model="llama-3.1-8b-instant",
+                    messages=[
+                        {"role": "system", "content": system_message},
+                        {"role": "user", "content": user_message},
+                    ],
+                    temperature=0.0,
+                )
+                st.markdown(response.choices[0].message.content)
+        except Exception as e:
+            st.error(
+                f"❌ **Groq Authentication Crash during RAG Generation:** {str(e)}"
+            )
+
+    with st.expander("🔎 View Source Clauses [PO-101]"):
+        for i, rule in enumerate(matched_rules, 1):
+            st.info(f"**Source Context Block #{i}:**\n{rule}")
+
+    # Consultation Sandbox
+    st.markdown("---")
+    st.markdown("### 💬 Ad-Hoc Regulatory Consultation Sandbox")
+    custom_question = st.text_input(
+        "Enter your specific advisor question here:", key="advisor_free_question"
+    )
+    ask_button = st.button("💬 Query Examination Database")
+
+    if ask_button and custom_question:
+        if not GROQ_API_KEY:
+            st.error("❌ **LLM Error:** Missing `GROQ_API_KEY` definition token.")
+        else:
+            client = Groq(api_key=GROQ_API_KEY)
+            question_vector = vectorizer.transform([custom_question])
+            question_scores = cosine_similarity(question_vector, tfidf_matrix).flatten()
+
+            sandbox_chunks = [
+                chunks[idx][:1500] + "..."
+                for idx in np.argsort(question_scores)[::-1][:3]
+                if question_scores[idx] >= 0.00
+            ]
+
+            if sandbox_chunks:
+                payload = "\n\n".join(sandbox_chunks)
+                prompt = f"Student Profile: {c}. Regulation context: {payload}. Answer the following specific query: {custom_question}"
+
+                with st.spinner("Synthesizing advice..."):
+                    res = client.chat.completions.create(
+                        model="llama-3.1-8b-instant",
+                        messages=[{"role": "user", "content": prompt}],
+                    )
+                    st.session_state.sandbox_response = res.choices[0].message.content
+
+    if st.session_state.sandbox_response is not None:
+        st.markdown("---")
+        st.success("#### 📋 Custom Consultation Answer")
+        st.write(st.session_state.sandbox_response)
 else:
-    st.info("Navigate to the Dashboard page to generate a policy brief.")
+    st.info(
+        "ℹ️ Fill out student parameters on Page 1 (**main_app.py**) to activate the regulatory briefing engine."
+    )
