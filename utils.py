@@ -25,34 +25,91 @@ if raw_key:
 
 
 def apply_custom_styles():
-    """Injects central visual layout engine CSS."""
+    """Injects compact presentation CSS to minimize page scrolling."""
     st.markdown(
         """
         <style>
+            /* 1. Reduce top and bottom whitespace on main page container */
+            .block-container {
+                padding-top: 1.2rem !important;
+                padding-bottom: 1rem !important;
+                padding-left: 2rem !important;
+                padding-right: 2rem !important;
+            }
+
+            /* 2. Scaled title and headers */
             h1 {
                 text-align: center !important;
-                font-size: 3.25rem !important;
-                padding-bottom: 1rem !important;
+                font-size: 2.1rem !important;
+                padding-bottom: 0.2rem !important;
+                margin-bottom: 0.5rem !important;
             }
-            html, body, [data-testid="stWidgetLabel"] p, .stSelectbox div, .stMarkdown p {
-                font-size: 1.15rem !important;
+            h2 {
+                font-size: 1.4rem !important;
+                margin-top: 0.2rem !important;
+                margin-bottom: 0.4rem !important;
             }
             h3, h4 {
+                font-size: 1.15rem !important;
                 font-weight: bold !important;
+                margin-top: 0.2rem !important;
+                margin-bottom: 0.3rem !important;
             }
+
+            /* 3. Compact text sizing for descriptions, paragraphs, and labels */
+            html, body, [data-testid="stWidgetLabel"] p, .stSelectbox div, .stMarkdown p {
+                font-size: 0.92rem !important;
+            }
+
+            /* 4. Tighten widget spacing and margins */
+            div[data-testid="stForm"] {
+                padding: 0.8rem 1rem !important;
+                margin-bottom: 0.5rem !important;
+            }
+
+            .stSelectbox, .stSlider, .stNumberInput {
+                margin-bottom: -0.4rem !important;
+            }
+
+            div[data-baseweb="select"] > div {
+                min-height: 2.2rem !important;
+                padding-top: 0 !important;
+                padding-bottom: 0 !important;
+            }
+
+            /* 5. Scaled and compact submit button */
             .stFormSubmitButton > button {
                 background-color: #2e7d32 !important; 
                 color: white !important;              
-                font-size: 1.25rem !important;
+                font-size: 1.05rem !important;
                 font-weight: bold !important;
-                height: 3em !important;
+                height: 2.4em !important;
                 width: 100% !important;
-                border-radius: 8px !important;
+                border-radius: 6px !important;
                 border: none !important;
+                margin-top: 0.5rem !important;
             }
             .stFormSubmitButton > button:hover {
                 background-color: #1b5e20 !important; 
                 color: #ffffff !important;
+            }
+
+            /* 6. Compact Metric Cards */
+            [data-testid="stMetricValue"] {
+                font-size: 1.6rem !important;
+            }
+            [data-testid="stMetricLabel"] p {
+                font-size: 0.88rem !important;
+            }
+
+            /* 7. Alert containers compact padding */
+            div[data-testid="stAlert"] {
+                padding: 0.6rem 0.8rem !important;
+                margin-bottom: 0.5rem !important;
+            }
+            
+            hr {
+                margin: 0.6rem 0 !important;
             }
         </style>
         """,
@@ -95,7 +152,7 @@ def load_all_assets():
         scaler = joblib.load("models/clustering scaler.pkl")
         kmeans = joblib.load("models/kmeans_model.pkl")
         scaler_clustering = joblib.load("models/clustering_scaler.pkl")
-    except Exception as e:
+    except Exception:
         pass  # Handled safely by fallbacks in main runtime
 
     # Regulatory Text Ingestion
