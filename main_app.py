@@ -10,16 +10,16 @@ from utils import (
 
 # 1. Page Configuration
 st.set_page_config(
-    page_title="Student Profile & LIVE ANALYTICS",
-    page_icon="🎓",
-    layout="wide"
+    page_title="Student Profile & LIVE ANALYTICS", page_icon="🎓", layout="wide"
 )
 
 # 2. System Initialization
 apply_custom_styles()
 init_session_state()
 
-model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix = load_all_assets()
+model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix = (
+    load_all_assets()
+)
 
 st.title("🎓 Student Profile & LIVE ANALYTICS")
 st.markdown("---")
@@ -59,31 +59,75 @@ with col1:
     with st.form(key=f"input_form_{st.session_state.form_key}"):
 
         st.subheader("🌍 Socio-economic Indicators")
-        
-        gender_idx = GENDER_OPTS.index(current["gender"]) if current["gender"] in GENDER_OPTS else 0
+
+        gender_idx = (
+            GENDER_OPTS.index(current["gender"])
+            if current["gender"] in GENDER_OPTS
+            else 0
+        )
         gender = st.selectbox("Gender", GENDER_OPTS, index=gender_idx)
 
-        res_idx = RESIDENCY_OPTS.index(current["residency"]) if current["residency"] in RESIDENCY_OPTS else 0
-        residency = st.selectbox("Residency Classification", RESIDENCY_OPTS, index=res_idx)
+        res_idx = (
+            RESIDENCY_OPTS.index(current["residency"])
+            if current["residency"] in RESIDENCY_OPTS
+            else 0
+        )
+        residency = st.selectbox(
+            "Residency Classification", RESIDENCY_OPTS, index=res_idx
+        )
 
-        baf_idx = BAFOEG_OPTS.index(current["bafoeg"]) if current["bafoeg"] in BAFOEG_OPTS else 0
+        baf_idx = (
+            BAFOEG_OPTS.index(current["bafoeg"])
+            if current["bafoeg"] in BAFOEG_OPTS
+            else 0
+        )
         bafoeg = st.selectbox("BAföG Recipient Status", BAFOEG_OPTS, index=baf_idx)
 
-        job_idx = JOB_OPTS.index(current["student_job"]) if current["student_job"] in JOB_OPTS else 0
+        job_idx = (
+            JOB_OPTS.index(current["student_job"])
+            if current["student_job"] in JOB_OPTS
+            else 0
+        )
         student_job = st.selectbox("Employment Configuration", JOB_OPTS, index=job_idx)
 
-        acc_idx = ACCOM_OPTS.index(current["accommodation"]) if current["accommodation"] in ACCOM_OPTS else 0
-        accommodation = st.selectbox("Accommodation Stability", ACCOM_OPTS, index=acc_idx)
+        acc_idx = (
+            ACCOM_OPTS.index(current["accommodation"])
+            if current["accommodation"] in ACCOM_OPTS
+            else 0
+        )
+        accommodation = st.selectbox(
+            "Accommodation Stability", ACCOM_OPTS, index=acc_idx
+        )
 
         st.subheader("📚 Academic Milestones")
-        deg_idx = DEGREE_OPTS.index(current["is_master"]) if current["is_master"] in DEGREE_OPTS else 0
+        deg_idx = (
+            DEGREE_OPTS.index(current["is_master"])
+            if current["is_master"] in DEGREE_OPTS
+            else 0
+        )
         is_master = st.selectbox("Enrolled Degree Level", DEGREE_OPTS, index=deg_idx)
 
-        ects_s1 = st.number_input("ECTS Credits Earned (Sem 1)", 0, 30, value=int(current["ects_s1"]))
-        grade_s1 = st.slider("Grade Average (Sem 1) [1.0 Best to 5.0 Fail]", 1.0, 5.0, value=float(current["grade_s1"]), step=0.1)
+        ects_s1 = st.number_input(
+            "ECTS Credits Earned (Sem 1)", 0, 30, value=int(current["ects_s1"])
+        )
+        grade_s1 = st.slider(
+            "Grade Average (Sem 1) [1.0 Best to 5.0 Fail]",
+            1.0,
+            5.0,
+            value=float(current["grade_s1"]),
+            step=0.1,
+        )
 
-        ects_s2 = st.number_input("ECTS Credits Earned (Sem 2)", 0, 30, value=int(current["ects_s2"]))
-        grade_s2 = st.slider("Grade Average (Sem 2) [1.0 Best to 5.0 Fail]", 1.0, 5.0, value=float(current["grade_s2"]), step=0.1)
+        ects_s2 = st.number_input(
+            "ECTS Credits Earned (Sem 2)", 0, 30, value=int(current["ects_s2"])
+        )
+        grade_s2 = st.slider(
+            "Grade Average (Sem 2) [1.0 Best to 5.0 Fail]",
+            1.0,
+            5.0,
+            value=float(current["grade_s2"]),
+            step=0.1,
+        )
 
         submit_btn = st.form_submit_button("🚀 Run Prediction & Live Analytics")
 
@@ -221,7 +265,9 @@ with col2:
             f"**👥 Cohort Profile Focus:** {CLUSTER_LABELS.get(cluster_id, 'Specialized Framework Segment Overview')}"
         )
 
-        st.info("💡 **Next Step:** Select **02 Policy Advisory** in the sidebar menu to view RAG regulatory reports.")
+        st.info(
+            "💡 **Next Step:** Select **02 Policy Advisory** in the sidebar menu to view RAG regulatory reports."
+        )
     else:
         st.info(
             "ℹ️ Fill out student parameters on the left panel and click **Run Prediction & Live Analytics**."
