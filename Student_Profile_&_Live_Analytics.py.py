@@ -21,7 +21,7 @@ model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix = (
     load_all_assets()
 )
 
-st.title("🎓 Student Profile & LIVE ANALYTICS")
+st.title("🎓 STUDENT PROFILE AND LIVE ANALYTICS")
 st.markdown("---")
 
 col1, col2 = st.columns([1, 1.2])

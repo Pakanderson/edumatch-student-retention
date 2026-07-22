@@ -11,7 +11,7 @@ from utils import (
 
 # 1. Configuration
 st.set_page_config(
-    page_title="Policy RAG & Advisory Guidance", page_icon="⚖️", layout="wide"
+    page_title="Policy Reg and Advisory Dashboard", page_icon="⚖️", layout="wide"
 )
 
 # 2. System Initialization
@@ -22,7 +22,7 @@ model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix = (
     load_all_assets()
 )
 
-st.title("⚖️ Policy RAG & Advisory Guidance")
+st.title("⚖️ Policy Reg and Advisory Dashboard")
 st.markdown("---")
 
 if st.session_state.cached_student is None:
@@ -33,7 +33,7 @@ else:
     c = st.session_state.cached_student
 
     # Summary Context Card
-    st.markdown("### 📌 Active Student Profile Context")
+    st.markdown("### 📌 Student Profile Summary")
     sc1, sc2, sc3, sc4 = st.columns(4)
     sc1.metric("Degree Track", c["is_master"].split()[0])
     sc2.metric("Sem 1 Grade / ECTS", f"{c['grade_s1']} / {c['ects_s1']}")
