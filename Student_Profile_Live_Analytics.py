@@ -144,6 +144,7 @@ with col1:
                 input_df_km = input_df[scaler_clustering.feature_names_in_]
                 scaled_km = scaler_clustering.transform(input_df_km)
                 st.session_state.cluster_id = kmeans.predict(scaled_km)[0]
+
             except Exception:
                 st.session_state.risk_pct = None
                 st.session_state.cluster_id = 1 if (ects_s1 + ects_s2) < 30 else 0
@@ -154,7 +155,6 @@ with col1:
 
         # Rerun to update the UI with new state
         st.rerun()
-
         # Store input selections into session state so returning to this page retains all choices
 st.session_state.cached_student = {
             "bafoeg": bafoeg,
