@@ -21,6 +21,9 @@ model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix = (
     load_all_assets()
 )
 
+# Define your presentation threshold here
+THRESHOLD = 45.0
+
 st.title("🎓 STUDENT PROFILE AND LIVE ANALYTICS")
 st.markdown("---")
 
@@ -197,13 +200,14 @@ with col2:
         heuristic_risk = (academic_score * 0.60) + (socioeconomic_score * 0.40)
         final_risk_pct = min(98.5, max(4.5, heuristic_risk))
 
-        if final_risk_pct >= 45.0:
+        # Using the restored THRESHOLD variable
+        if final_risk_pct >= THRESHOLD:
             st.error(
-                f"### ⚠️ HIGH RETENTION ALERT: **{final_risk_pct:.1f}% Attrition Probability**"
+                f"### ⚠️ HIGH RETENTION ALERT: **{final_risk_pct:.1f}% Attrition Probability** (Threshold: {THRESHOLD}%)"
             )
         else:
             st.success(
-                f"### ✅ **Stable Standing Profile: {final_risk_pct:.1f}% Attrition Probability**"
+                f"### ✅ **Stable Standing Profile: {final_risk_pct:.1f}% Attrition Probability** (Threshold: {THRESHOLD}%)"
             )
 
         st.markdown("#### 📊 Risk Driver Deconstruction")
