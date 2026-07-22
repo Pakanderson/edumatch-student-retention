@@ -1,34 +1,22 @@
-# Ignore local environment secrets
+# Local environment secrets & API keys
 .env
-.streamlit/
-/archive
-
-# Ignore heavy Machine Learning pkl assets
-models/*.pkl
-*.joblib
-
-# Python caching
-__pycache__/
-*.pyc
-
-# Local IDE files
-.vscode/
-.idea/
-.DS_Store
-# Local secret files
-.env
+*.env
+notebooks/.env
 .streamlit/secrets.toml
 
-# Heavy model files (only if downloading dynamically or exceeding GitHub limits)
-# models/*.pkl
+# Archive folder
+/archive
 
-# Cache
+# Python runtime caching & bytecode
 __pycache__/
 *.pyc
-.DS_Store
+*.pyo
+
+# Local IDE and System configuration files
 .vscode/
 .idea/
+.DS_Store
+*.swp
 
-.env
-notebooks/.env
-*.env
+# Note: We intentionally DO NOT ignore models/*.pkl or *.joblib 
+# so Streamlit Cloud can access your trained models on GitHub.
