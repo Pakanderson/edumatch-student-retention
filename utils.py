@@ -25,13 +25,13 @@ if raw_key:
 
 
 def apply_custom_styles():
-    """Injects compact presentation CSS with slightly reduced typography."""
+    """Injects compact presentation CSS with safe top margin spacing."""
     st.markdown(
         """
         <style>
-            /* 1. Eliminate heavy top and bottom whitespace */
+            /* 1. Safe top padding to prevent title cut-off under Streamlit header */
             .block-container {
-                padding-top: 0.8rem !important;
+                padding-top: 2.2rem !important;
                 padding-bottom: 0.8rem !important;
                 padding-left: 1.8rem !important;
                 padding-right: 1.8rem !important;
@@ -42,7 +42,8 @@ def apply_custom_styles():
                 text-align: center !important;
                 font-size: 1.85rem !important;
                 padding-bottom: 0.1rem !important;
-                margin-bottom: 0.3rem !important;
+                margin-top: 0.0rem !important;
+                margin-bottom: 0.4rem !important;
             }
             h2 {
                 font-size: 1.25rem !important;
@@ -56,12 +57,12 @@ def apply_custom_styles():
                 margin-bottom: 0.2rem !important;
             }
 
-            /* 3. Base text and widget label scaling (slight reduction to 0.85rem) */
+            /* 3. Base text and widget label scaling */
             html, body, [data-testid="stWidgetLabel"] p, .stSelectbox div, .stMarkdown p {
                 font-size: 0.85rem !important;
             }
 
-            /* 4. Streamlit form container and input element padding */
+            /* 4. Form container & widget spacing */
             div[data-testid="stForm"] {
                 padding: 0.6rem 0.8rem !important;
                 margin-bottom: 0.4rem !important;
@@ -94,7 +95,7 @@ def apply_custom_styles():
                 color: #ffffff !important;
             }
 
-            /* 6. Compact Metric Card Display */
+            /* 6. Compact Metric Cards */
             [data-testid="stMetricValue"] {
                 font-size: 1.4rem !important;
             }
@@ -102,7 +103,7 @@ def apply_custom_styles():
                 font-size: 0.80rem !important;
             }
 
-            /* 7. Alert box & horizontal rule adjustments */
+            /* 7. Alert containers */
             div[data-testid="stAlert"] {
                 padding: 0.5rem 0.7rem !important;
                 margin-bottom: 0.4rem !important;
