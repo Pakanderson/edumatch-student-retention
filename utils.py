@@ -16,7 +16,8 @@ raw_key = os.environ.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
 GROQ_API_KEY = None
 if raw_key:
     GROQ_API_KEY = (
-        raw_key.strip()
+        str(raw_key)
+        .strip()
         .replace('"', "")
         .replace("'", "")
         .replace("\r", "")
@@ -25,7 +26,7 @@ if raw_key:
 
 
 def apply_custom_styles():
-    """Injects compact presentation CSS with safe top margin spacing."""
+    """Injects compact presentation CSS and specific button color overrides."""
     st.markdown(
         """
         <style>
@@ -78,8 +79,8 @@ def apply_custom_styles():
                 padding-bottom: 0 !important;
             }
 
-            /* 5. Scaled submit button */
-            .stFormSubmitButton > button {
+            /* 5. Scaled submit button (Run Prediction) */
+            div[data-testid="stForm"] div[data-testid="column"]:nth-of-type(1) button {
                 background-color: #2e7d32 !important; 
                 color: white !important;              
                 font-size: 0.95rem !important;
@@ -88,25 +89,26 @@ def apply_custom_styles():
                 width: 100% !important;
                 border-radius: 6px !important;
                 border: none !important;
-                margin-top: 0.4rem !important;
-            }
-            .stFormSubmitButton > button:hover {
-                background-color: #1b5e20 !important; 
-                color: #ffffff !important;
             }
 
-            /* 6. Compact Metric Cards */
+            /* 6. Scaled Clear button (Red) */
+            div[data-testid="stForm"] div[data-testid="column"]:nth-of-type(2) button {
+                background-color: #ff4b4b !important;
+                color: white !important;
+                font-size: 0.95rem !important;
+                font-weight: bold !important;
+                height: 2.2em !important;
+                width: 100% !important;
+                border-radius: 6px !important;
+                border: none !important;
+            }
+
+            /* 7. Metric Card Display */
             [data-testid="stMetricValue"] {
                 font-size: 1.4rem !important;
             }
             [data-testid="stMetricLabel"] p {
                 font-size: 0.80rem !important;
-            }
-
-            /* 7. Alert containers */
-            div[data-testid="stAlert"] {
-                padding: 0.5rem 0.7rem !important;
-                margin-bottom: 0.4rem !important;
             }
             
             hr {
@@ -116,19 +118,7 @@ def apply_custom_styles():
         """,
         unsafe_allow_html=True,
     )
-# Add this inside your existing apply_custom_styles() function in utils.py
-st.markdown(
-    """
-    <style>
-    /* Select the second button inside the form row and make it red */
-    div[data-testid="stForm"] div[data-testid="column"]:nth-of-type(2) button {
-        background-color: #ff4b4b !important;
-        color: white !important;
-    }
-    </style>
-""",
-    unsafe_allow_html=True,
-)
+
 
 def init_session_state():
     """Initializes global session state values across pages."""
@@ -166,26 +156,15 @@ def load_all_assets():
         kmeans = joblib.load("models/kmeans_model.pkl")
         scaler_clustering = joblib.load("models/clustering_scaler.pkl")
     except Exception:
-        pass  # Handled safely by fallbacks in main runtime
+        pass
 
-    # Regulatory Text Ingestion
     chunks = []
     if os.path.exists("raw_extracted_po.txt"):
         with open("raw_extracted_po.txt", "r", encoding="utf-8") as f:
             chunks = [c.strip() for c in f.read().split("\n\n") if c.strip()]
-    elif os.path.exists("examination_regulations.txt"):
-        with open("examination_regulations.txt", "r", encoding="utf-8") as f:
-            chunks = [
-                c.strip() for c in f.read().split("=== CLAUSE START ===") if c.strip()
-            ]
 
     if not chunks:
-        chunks = [
-            "[PO-101] General Examination Regulations Framework: Registration rules require valid fees paid prior to semester deadlines.",
-            "[PO-201] Grading Matrix and Progress Limits: Cumulative grades over 3.5 flag immediate academic monitoring.",
-            "[PO-301] Minimum Credit Point Sequence: Students must acquire at least 15 ECTS points per academic semester block.",
-            "[PO-302] Examination repetition limits: Students are granted up to three attempts for mandatory core module examinations before termination.",
-        ]
+        chunks = ["[PO-101] General Regs.", "[PO-302] Hardship Apps."]
 
     vectorizer = TfidfVectorizer(stop_words="english")
     tfidf_matrix = vectorizer.fit_transform(chunks)
@@ -194,19 +173,7 @@ def load_all_assets():
 
 
 CLUSTER_LABELS = {
-    0: "Cluster 0: High Academic Progress with Structural Risk Factors",
-    1: "Cluster 1: Moderate Credit Accumulation and Study-Load Risk",
-    2: "Cluster 2: Early Non-Engagement Profile: Younger Male Students",
-    3: "Cluster 3: Employed Student Study-Work Pressure Profile",
-    4: "Cluster 4: International Student Transition and Credit-Progress Risk",
-    5: "Cluster 5: BAföG Recipient Financial-Support and Progression Risk",
-    6: "Cluster 6: Mature Student High-Performance with Retention Risk",
-    7: "Cluster 7: Stable Academic Progress with Socio-Economic Vulnerability",
-    8: "Cluster 8: Early Non-Engagement Profile: Mature Students",
-    9: "Cluster 9: BAföG Recipient Declining Academic-Progress Profile",
-    10: "Cluster 10: Employed Mature Student Study-Work Pressure Profile",
-    11: "Cluster 11: Mid-Programme Semester-Two Academic Decline Profile",
-    12: "Cluster 12: Working Master’s Student Academic-Progress Decline Profile",
-    13: "Cluster 13: High ECTS Accumulation with General Retention Risk",
-    14: "Cluster 14: Early Non-Engagement Profile: Younger Female Students",
+    0: "Academic Progress High Risk",
+    1: "Moderate Credit Risk",
+    # ... (other clusters)
 }
