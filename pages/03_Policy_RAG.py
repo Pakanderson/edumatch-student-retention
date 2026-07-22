@@ -19,6 +19,49 @@ model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix = (
 )
 GROQ_API_KEY = get_groq_api_key()
 
+  # Consultation Sandbox
+    st.markdown("---")
+    st.markdown("### 💬 Ad-Hoc Regulatory Consultation Sandbox")
+    custom_question = st.text_input(
+        "Enter your specific advisor question here:", key="advisor_free_question"
+    )
+    ask_button = st.button("💬 Query Examination Database")
+
+    if ask_button and custom_question:
+        if not GROQ_API_KEY:
+            st.error("❌ **LLM Error:** Missing `GROQ_API_KEY` definition token.")
+        else:
+            client = Groq(api_key=GROQ_API_KEY)
+            question_vector = vectorizer.transform([custom_question])
+            question_scores = cosine_similarity(question_vector, tfidf_matrix).flatten()
+
+            sandbox_chunks = [
+                chunks[idx][:1500] + "..."
+                for idx in np.argsort(question_scores)[::-1][:3]
+                if question_scores[idx] >= 0.00
+            ]
+
+            if sandbox_chunks:
+                payload = "\n\n".join(sandbox_chunks)
+                prompt = f"Student Profile: {c}. Regulation context: {payload}. Answer the following specific query: {custom_question}"
+
+                with st.spinner("Synthesizing advice..."):
+                    res = client.chat.completions.create(
+                        model="llama-3.1-8b-instant",
+                        messages=[{"role": "user", "content": prompt}],
+                    )
+                    st.session_state.sandbox_response = res.choices[0].message.content
+
+    if st.session_state.sandbox_response is not None:
+        st.markdown("---")
+        st.success("#### 📋 Custom Consultation Answer")
+        st.write(st.session_state.sandbox_response)
+else:
+    st.info(
+        "ℹ️ Fill out student parameters on Page 1 (**main_app.py**) to activate the regulatory briefing engine."
+    )
+
+
 st.title("📋 Policy RAG & Advisory Guidance")
 
 if st.session_state.cached_student is not None:
