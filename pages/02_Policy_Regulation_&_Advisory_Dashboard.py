@@ -11,7 +11,7 @@ from utils import (
 
 # 1. Configuration
 st.set_page_config(
-    page_title="Policy Reg and Advisory Dashboard", page_icon="⚖️", layout="wide"
+    page_title="Policy Regulations and Advisory Dashboard", page_icon="⚖️", layout="wide"
 )
 
 # 2. System Initialization
@@ -22,7 +22,7 @@ model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix = (
     load_all_assets()
 )
 
-st.title("⚖️ Policy Reg and Advisory Dashboard")
+st.title("⚖️ Policy Regulations and Advisory Dashboard")
 st.markdown("---")
 
 if st.session_state.cached_student is None:
