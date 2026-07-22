@@ -55,7 +55,7 @@ else:
 # ADVISOR REGISTRATION INPUT PANEL (COL1)
 # ===========================================================================
 with col1:
-    st.header("📋 Advisor Input Panel")
+    st.header("📋 Student Profile")
     with st.form(key=f"input_form_{st.session_state.form_key}"):
 
         st.subheader("🌍 Socio-economic Indicators")
