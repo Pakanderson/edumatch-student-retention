@@ -135,7 +135,7 @@ with col2:
         c = st.session_state.cached_student
         cluster_id = st.session_state.cluster_id
 
-        # 1. Compute Operational Driver Scores
+        # 1. Compute Operational Sub-Driver Scores
         s1_deficit = max(0, 30 - c["ects_s1"])
         s2_deficit = max(0, 30 - c["ects_s2"])
         ects_penalty_score = (s1_deficit * 1.5) + (s2_deficit * 1.5)
@@ -157,26 +157,20 @@ with col2:
             socio_base += 15.0
         socioeconomic_score = min(100.0, socio_base)
 
-        # 2. Dynamic Weighted Risk (60% Academic, 40% Socioeconomic)
+        # 2. Transparent Weighted Attrition Calculation (60% Academic / 40% Socioeconomic)
         heuristic_risk = (academic_score * 0.60) + (socioeconomic_score * 0.40)
 
-        if st.session_state.risk_pct is not None:
-            # Smooth blend between ML model probability and heuristic sub-drivers
-            final_risk_pct = (st.session_state.risk_pct * 0.5) + (heuristic_risk * 0.5)
-        else:
-            final_risk_pct = heuristic_risk
+        # Direct synchronization: Prioritize transparent sub-driver math to guarantee alignment
+        final_risk_pct = min(98.5, max(4.5, heuristic_risk))
 
-        # NO HARD CAPS HERE (25.0 / 28.0 removed completely)
-        final_risk_pct = min(98.5, max(4.5, final_risk_pct))
-
-        # 3. Dynamic Visual Alert Banner
-        if final_risk_pct >= 40.0:
+        # 3. Dynamic Visual Alert Banner (Restored to 45.0% Threshold)
+        if final_risk_pct >= 45.0:
             st.error(
-                f"### ⚠️ HIGH RETENTION ALERT: **{final_risk_pct:.1f}% Attrition Probability** (Threshold: 40.0%)"
+                f"### ⚠️ HIGH RETENTION ALERT: **{final_risk_pct:.1f}% Attrition Probability** (Threshold: 45.0%)"
             )
         else:
             st.success(
-                f"### ✅ **Stable Standing Profile: {final_risk_pct:.1f}% Attrition Probability**"
+                f"### ✅ **Stable Standing Profile: {final_risk_pct:.1f}% Attrition Probability** (Threshold: 45.0%)"
             )
 
         st.markdown("#### 📊 Risk Driver Deconstruction")
