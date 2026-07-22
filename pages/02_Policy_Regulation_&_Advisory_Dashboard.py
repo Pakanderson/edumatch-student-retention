@@ -132,7 +132,7 @@ else:
 {context_payload}
 </REGULATORY_CONTEXT_BLOCKS>
 """
-            if st.button("⚡ Synthesize Regulatory Report", use_container_width=True):
+            if st.button("⚡ VIEW FULL REGULATORY REPORT", use_container_width=True):
                 try:
                     with st.spinner(
                         "LLM synthesizing verified student regulatory advice..."
