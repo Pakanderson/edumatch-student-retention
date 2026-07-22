@@ -25,91 +25,91 @@ if raw_key:
 
 
 def apply_custom_styles():
-    """Injects compact presentation CSS to minimize page scrolling."""
+    """Injects compact presentation CSS with slightly reduced typography."""
     st.markdown(
         """
         <style>
-            /* 1. Reduce top and bottom whitespace on main page container */
+            /* 1. Eliminate heavy top and bottom whitespace */
             .block-container {
-                padding-top: 1.2rem !important;
-                padding-bottom: 1rem !important;
-                padding-left: 2rem !important;
-                padding-right: 2rem !important;
+                padding-top: 0.8rem !important;
+                padding-bottom: 0.8rem !important;
+                padding-left: 1.8rem !important;
+                padding-right: 1.8rem !important;
             }
 
-            /* 2. Scaled title and headers */
+            /* 2. Compact headers and title typography */
             h1 {
                 text-align: center !important;
-                font-size: 2.1rem !important;
-                padding-bottom: 0.2rem !important;
-                margin-bottom: 0.5rem !important;
-            }
-            h2 {
-                font-size: 1.4rem !important;
-                margin-top: 0.2rem !important;
-                margin-bottom: 0.4rem !important;
-            }
-            h3, h4 {
-                font-size: 1.15rem !important;
-                font-weight: bold !important;
-                margin-top: 0.2rem !important;
+                font-size: 1.85rem !important;
+                padding-bottom: 0.1rem !important;
                 margin-bottom: 0.3rem !important;
             }
-
-            /* 3. Compact text sizing for descriptions, paragraphs, and labels */
-            html, body, [data-testid="stWidgetLabel"] p, .stSelectbox div, .stMarkdown p {
-                font-size: 0.92rem !important;
+            h2 {
+                font-size: 1.25rem !important;
+                margin-top: 0.1rem !important;
+                margin-bottom: 0.3rem !important;
+            }
+            h3, h4 {
+                font-size: 1.05rem !important;
+                font-weight: bold !important;
+                margin-top: 0.1rem !important;
+                margin-bottom: 0.2rem !important;
             }
 
-            /* 4. Tighten widget spacing and margins */
+            /* 3. Base text and widget label scaling (slight reduction to 0.85rem) */
+            html, body, [data-testid="stWidgetLabel"] p, .stSelectbox div, .stMarkdown p {
+                font-size: 0.85rem !important;
+            }
+
+            /* 4. Streamlit form container and input element padding */
             div[data-testid="stForm"] {
-                padding: 0.8rem 1rem !important;
-                margin-bottom: 0.5rem !important;
+                padding: 0.6rem 0.8rem !important;
+                margin-bottom: 0.4rem !important;
             }
 
             .stSelectbox, .stSlider, .stNumberInput {
-                margin-bottom: -0.4rem !important;
+                margin-bottom: -0.6rem !important;
             }
 
             div[data-baseweb="select"] > div {
-                min-height: 2.2rem !important;
+                min-height: 2.0rem !important;
                 padding-top: 0 !important;
                 padding-bottom: 0 !important;
             }
 
-            /* 5. Scaled and compact submit button */
+            /* 5. Scaled submit button */
             .stFormSubmitButton > button {
                 background-color: #2e7d32 !important; 
                 color: white !important;              
-                font-size: 1.05rem !important;
+                font-size: 0.95rem !important;
                 font-weight: bold !important;
-                height: 2.4em !important;
+                height: 2.2em !important;
                 width: 100% !important;
                 border-radius: 6px !important;
                 border: none !important;
-                margin-top: 0.5rem !important;
+                margin-top: 0.4rem !important;
             }
             .stFormSubmitButton > button:hover {
                 background-color: #1b5e20 !important; 
                 color: #ffffff !important;
             }
 
-            /* 6. Compact Metric Cards */
+            /* 6. Compact Metric Card Display */
             [data-testid="stMetricValue"] {
-                font-size: 1.6rem !important;
+                font-size: 1.4rem !important;
             }
             [data-testid="stMetricLabel"] p {
-                font-size: 0.88rem !important;
+                font-size: 0.80rem !important;
             }
 
-            /* 7. Alert containers compact padding */
+            /* 7. Alert box & horizontal rule adjustments */
             div[data-testid="stAlert"] {
-                padding: 0.6rem 0.8rem !important;
-                margin-bottom: 0.5rem !important;
+                padding: 0.5rem 0.7rem !important;
+                margin-bottom: 0.4rem !important;
             }
             
             hr {
-                margin: 0.6rem 0 !important;
+                margin: 0.4rem 0 !important;
             }
         </style>
         """,
