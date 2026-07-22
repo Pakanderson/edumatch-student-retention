@@ -1,6 +1,5 @@
 # Local environment secrets & API keys
 .env
-*.env
 notebooks/.env
 .streamlit/secrets.toml
 
