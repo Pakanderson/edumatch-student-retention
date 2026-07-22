@@ -5,57 +5,45 @@ import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from groq import Groq
 
-# Load environment secrets
+# --- INITIALIZE ENVIRONMENT ---
 load_dotenv(override=True)
 
-
-def get_groq_api_key():
-    raw_key = os.environ.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
-    if not raw_key and "GROQ_API_KEY" in st.secrets:
-        raw_key = st.secrets["GROQ_API_KEY"]
-
-    if raw_key:
-        return (
-            str(raw_key)
-            .strip()
-            .replace('"', "")
-            .replace("'", "")
-            .replace("\r", "")
-            .replace("\n", "")
-        )
-    return None
+# Bulk-strip trailing spaces or artifacts from API Key
+raw_key = os.environ.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
+GROQ_API_KEY = None
+if raw_key:
+    GROQ_API_KEY = (
+        raw_key.strip()
+        .replace('"', "")
+        .replace("'", "")
+        .replace("\r", "")
+        .replace("\n", "")
+    )
 
 
 def apply_custom_styles():
-    """Injects high-impact presentation typography and visual styling across all pages."""
+    """Injects central visual layout engine CSS."""
     st.markdown(
         """
         <style>
-            /* 1. Master Title styling */
             h1 {
                 text-align: center !important;
-                font-size: 3.5rem !important;
-                font-weight: 800 !important;
+                font-size: 3.25rem !important;
                 padding-bottom: 1rem !important;
             }
-            
-            /* 2. Scaled presentation typography */
             html, body, [data-testid="stWidgetLabel"] p, .stSelectbox div, .stMarkdown p {
-                font-size: 1.35rem !important;
-                line-height: 1.6 !important;
+                font-size: 1.15rem !important;
             }
-            
-            /* 3. Section subheaders */
-            h2, h3, h4 {
-                font-weight: 700 !important;
+            h3, h4 {
+                font-weight: bold !important;
             }
-
-            /* 4. Form Submit Button styling */
             .stFormSubmitButton > button {
                 background-color: #2e7d32 !important; 
                 color: white !important;              
-                font-size: 1.35rem !important;
+                font-size: 1.25rem !important;
                 font-weight: bold !important;
                 height: 3em !important;
                 width: 100% !important;
@@ -72,9 +60,35 @@ def apply_custom_styles():
     )
 
 
+def init_session_state():
+    """Initializes global session state values across pages."""
+    if "form_key" not in st.session_state:
+        st.session_state.form_key = 0
+    if "cached_student" not in st.session_state:
+        st.session_state.cached_student = None
+    if "risk_pct" not in st.session_state:
+        st.session_state.risk_pct = None
+    if "cluster_id" not in st.session_state:
+        st.session_state.cluster_id = None
+    if "sandbox_response" not in st.session_state:
+        st.session_state.sandbox_response = None
+    if "sandbox_chunks" not in st.session_state:
+        st.session_state.sandbox_chunks = None
+
+
+def clear_inputs():
+    """Resets input session data."""
+    st.session_state.form_key += 1
+    st.session_state.cached_student = None
+    st.session_state.risk_pct = None
+    st.session_state.cluster_id = None
+    st.session_state.sandbox_response = None
+    st.session_state.sandbox_chunks = None
+
+
 @st.cache_resource(show_spinner=False)
 def load_all_assets():
-    """Loads ML artifacts, scalers, and fits TF-IDF text vectorizers once into memory."""
+    """Loads machine learning models, scalers, and TF-IDF text vectorizers."""
     model, scaler, kmeans, scaler_clustering = None, None, None, None
     try:
         model = joblib.load("models/german_retention_model.pkl")
@@ -82,7 +96,7 @@ def load_all_assets():
         kmeans = joblib.load("models/kmeans_model.pkl")
         scaler_clustering = joblib.load("models/clustering_scaler.pkl")
     except Exception as e:
-        st.error(f"❌ Error loading system files from models/ directory: {e}")
+        pass  # Handled safely by fallbacks in main runtime
 
     # Regulatory Text Ingestion
     chunks = []
@@ -109,25 +123,20 @@ def load_all_assets():
     return model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix
 
 
-def init_session_state():
-    if "form_key" not in st.session_state:
-        st.session_state.form_key = 0
-    if "cached_student" not in st.session_state:
-        st.session_state.cached_student = None
-    if "risk_pct" not in st.session_state:
-        st.session_state.risk_pct = None
-    if "cluster_id" not in st.session_state:
-        st.session_state.cluster_id = None
-    if "sandbox_response" not in st.session_state:
-        st.session_state.sandbox_response = None
-    if "sandbox_chunks" not in st.session_state:
-        st.session_state.sandbox_chunks = None
-
-
-def clear_inputs():
-    st.session_state.form_key += 1
-    st.session_state.cached_student = None
-    st.session_state.risk_pct = None
-    st.session_state.cluster_id = None
-    st.session_state.sandbox_response = None
-    st.session_state.sandbox_chunks = None
+CLUSTER_LABELS = {
+    0: "Cluster 0: High Academic Progress with Structural Risk Factors",
+    1: "Cluster 1: Moderate Credit Accumulation and Study-Load Risk",
+    2: "Cluster 2: Early Non-Engagement Profile: Younger Male Students",
+    3: "Cluster 3: Employed Student Study-Work Pressure Profile",
+    4: "Cluster 4: International Student Transition and Credit-Progress Risk",
+    5: "Cluster 5: BAföG Recipient Financial-Support and Progression Risk",
+    6: "Cluster 6: Mature Student High-Performance with Retention Risk",
+    7: "Cluster 7: Stable Academic Progress with Socio-Economic Vulnerability",
+    8: "Cluster 8: Early Non-Engagement Profile: Mature Students",
+    9: "Cluster 9: BAföG Recipient Declining Academic-Progress Profile",
+    10: "Cluster 10: Employed Mature Student Study-Work Pressure Profile",
+    11: "Cluster 11: Mid-Programme Semester-Two Academic Decline Profile",
+    12: "Cluster 12: Working Master’s Student Academic-Progress Decline Profile",
+    13: "Cluster 13: High ECTS Accumulation with General Retention Risk",
+    14: "Cluster 14: Early Non-Engagement Profile: Younger Female Students",
+}

@@ -1,107 +1,204 @@
+import numpy as np
 import streamlit as st
-from utils import apply_custom_styles, init_session_state
+from sklearn.metrics.pairwise import cosine_similarity
+from groq import Groq
+from utils import (
+    apply_custom_styles,
+    init_session_state,
+    load_all_assets,
+    GROQ_API_KEY,
+)
 
-st.set_page_config(page_title="Live Analytics Engine", page_icon="⚡", layout="wide")
+# 1. Configuration
+st.set_page_config(
+    page_title="Policy RAG & Advisory Guidance", page_icon="⚖️", layout="wide"
+)
 
+# 2. System Initialization
 apply_custom_styles()
 init_session_state()
 
-st.title("⚡ Live Analytics Engine")
+model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix = (
+    load_all_assets()
+)
 
-if st.session_state.cached_student is not None:
+st.title("⚖️ Policy RAG & Advisory Guidance")
+st.markdown("---")
+
+if st.session_state.cached_student is None:
+    st.warning(
+        "⚠️ No active student profile selected. Please enter metrics on **Page 1 (Student Profile & LIVE ANALYTICS)** first."
+    )
+else:
     c = st.session_state.cached_student
-    cluster_id = st.session_state.cluster_id
 
-    cluster_labels = {
-        0: "Cluster 0: High Academic Progress with Structural Risk Factors",
-        1: "Cluster 1: Moderate Credit Accumulation and Study-Load Risk",
-        2: "Cluster 2: Early Non-Engagement Profile: Younger Male Students",
-        3: "Cluster 3: Employed Student Study-Work Pressure Profile",
-        4: "Cluster 4: International Student Transition and Credit-Progress Risk",
-        5: "Cluster 5: BAföG Recipient Financial-Support and Progression Risk",
-        6: "Cluster 6: Mature Student High-Performance with Retention Risk",
-        7: "Cluster 7: Stable Academic Progress with Socio-Economic Vulnerability",
-        8: "Cluster 8: Early Non-Engagement Profile: Mature Students",
-        9: "Cluster 9: BAföG Recipient Declining Academic-Progress Profile",
-        10: "Cluster 10: Employed Mature Student Study-Work Pressure Profile",
-        11: "Cluster 11: Mid-Programme Semester-Two Academic Decline Profile",
-        12: "Cluster 12: Working Master’s Student Academic-Progress Decline Profile",
-        13: "Cluster 13: High ECTS Accumulation with General Retention Risk",
-        14: "Cluster 14: Early Non-Engagement Profile: Younger Female Students",
-    }
-
-    # Dynamic Heuristic Calibrations
-    s1_deficit = max(0, 30 - c["ects_s1"])
-    s2_deficit = max(0, 30 - c["ects_s2"])
-    ects_penalty_score = (s1_deficit * 1.5) + (s2_deficit * 1.5)
-
-    g1_stress = max(0.0, c["grade_s1"] - 1.0) * 10.0
-    g2_stress = max(0.0, c["grade_s2"] - 1.0) * 10.0
-    grade_penalty_score = g1_stress + g2_stress
-
-    academic_score = min(100.0, max(5.0, ects_penalty_score + grade_penalty_score))
-
-    socio_base = 10.0
-    if "Non-EU" in c["residency"]:
-        socio_base += 25.0
-    if "Job" in c["student_job"]:
-        socio_base += 20.0
-    if "Unstable" in c["accommodation"]:
-        socio_base += 20.0
-    if c["bafoeg"] == "No":
-        socio_base += 15.0
-    socioeconomic_score = min(100.0, socio_base)
-
-    if st.session_state.risk_pct is not None:
-        final_risk_pct = st.session_state.risk_pct
-    else:
-        final_risk_pct = (academic_score * 0.70) + (socioeconomic_score * 0.30)
-        final_risk_pct = min(98.5, max(4.5, final_risk_pct))
-
-    # Domain Hard Override
-    if c["grade_s1"] <= 2.0 and c["grade_s2"] <= 2.0:
-        final_risk_pct = min(final_risk_pct, 25.0)
-
-    if final_risk_pct >= 45.0:
-        st.error(
-            f"### ⚠️ HIGH RETENTION ALERT: **{final_risk_pct:.1f}% Attrition Probability** (Threshold: 45.0%)"
-        )
-    else:
-        st.success(
-            f"### ✅ **Stable Standing Profile: {final_risk_pct:.1f}% Attrition Probability**"
-        )
-
-    st.markdown("#### 📊 Risk Driver Deconstruction")
-    sub_col1, sub_col2 = st.columns(2)
-
-    with sub_col1:
-        st.metric(
-            label="📚 Operational Academic Risk Score",
-            value=f"{academic_score:.1f}%",
-        )
-        st.caption(
-            "🔴 Driven by compounding credit deficits."
-            if academic_score >= 50.0
-            else "🟢 Progress metrics stable."
-        )
-
-    with sub_col2:
-        st.metric(
-            label="🌍 Socioeconomic & Environmental Strain",
-            value=f"{socioeconomic_score:.1f}%",
-        )
-        st.caption(
-            "🔴 Impacted by integration or funding markers."
-            if socioeconomic_score >= 50.0
-            else "🟢 Structural context clear."
-        )
+    # Summary Context Card
+    st.markdown("### 📌 Active Student Profile Context")
+    sc1, sc2, sc3, sc4 = st.columns(4)
+    sc1.metric("Degree Track", c["is_master"].split()[0])
+    sc2.metric("Sem 1 Grade / ECTS", f"{c['grade_s1']} / {c['ects_s1']}")
+    sc3.metric("Sem 2 Grade / ECTS", f"{c['grade_s2']} / {c['ects_s2']}")
+    sc4.metric(
+        "Residency Status", "Non-EU" if "Non-EU" in c["residency"] else "EU/Domestic"
+    )
 
     st.markdown("---")
-    st.markdown(
-        f"**👥 Cohort Profile Focus:** {cluster_labels.get(cluster_id, 'Specialized Framework Segment Overview')}"
+
+    tab1, tab2 = st.tabs(
+        [
+            "📋 Automated Policy Advisory Report",
+            "💬 Ad-Hoc Regulatory Consultation Sandbox",
+        ]
     )
 
-else:
-    st.info(
-        "ℹ️ Fill out student parameters on Page 1 (**main_app.py**) and click **Run Prediction & RAG Analysis**."
-    )
+    # TAB 1: RAG REPORT GENERATOR
+    with tab1:
+        st.subheader("📋 Vector-Matched Examination Regulations (Prüfungsordnung)")
+
+        queries = []
+        if "Job" in c["student_job"]:
+            queries.append(
+                "fees tuition unpaid arrears payment deadline part time extension"
+            )
+        if c["ects_s1"] < 15 or c["ects_s2"] < 15:
+            queries.append(
+                "failed exam credit point minimum threshold or losing examination rights progress limits"
+            )
+        if c["grade_s1"] > 3.5 or c["grade_s2"] > 3.5:
+            queries.append(
+                "failed attempt repetition of examination grading scale fail attempts"
+            )
+
+        query_text = (
+            " ".join([q for q in queries if q])
+            or "standard admission requirements standing extension regulations"
+        )
+        scores = cosine_similarity(
+            vectorizer.transform([query_text]), tfidf_matrix
+        ).flatten()
+        top_idx = np.argsort(scores)[::-1]
+
+        matched_rules = [
+            chunks[i][:1500] + "..." if len(chunks[i]) > 1500 else chunks[i]
+            for i in top_idx[:2]
+            if scores[i] >= 0.05
+        ]
+
+        if matched_rules and GROQ_API_KEY:
+            client = Groq(api_key=GROQ_API_KEY)
+            context_payload = "\n\n".join(matched_rules)
+
+            s1_status = (
+                "PASSING"
+                if c["grade_s1"] <= 4.0
+                else "CRITICAL MODULE FAIL (Academic Emergency)"
+            )
+            s2_status = (
+                "PASSING"
+                if c["grade_s2"] <= 4.0
+                else "CRITICAL MODULE FAIL (Academic Emergency)"
+            )
+            trend_status = (
+                "STABLE / IMPROVING MARKS"
+                if c["grade_s2"] <= c["grade_s1"]
+                else "WORSENING GRADIENT DIRECTION"
+            )
+
+            system_message = (
+                "You are an expert academic advisor specialized in German university examination rules.\n\n"
+                "STRICT ADVISORY REPORTING RULES:\n"
+                "1. State exact qualitative definitions for Sem 1 and Sem 2 separately.\n"
+                "2. Note that 60 ECTS means 1 year of progress completed.\n"
+                "3. If grade number increases, sound a warning flag of performance decline.\n"
+                "4. Use scale: 1.0-1.5 Sehr Gut, 1.6-2.5 Gut, 2.6-3.5 Befriedigend, 3.6-4.0 Ausreichend, >4.0 Nicht ausreichend.\n\n"
+                "CRITICAL OUTPUT STRUCTURE DIRECTIVE:\nDo not write introductions. Output matching this exact markdown format:\n\n"
+                "### 📋 Academic Advisory Assessment Report\n\n"
+                "**Academic Standing**\n- [Insert classifications]\n\n"
+                "**Trend Analysis**\n- [Insert trend breakdown]\n\n"
+                "**Regulatory Directives**\n- [Insert actionable advice]"
+            )
+
+            user_message = f"""
+<STUDENT_METRICS>
+- Student Classification: {c['residency']}
+- Employment Job Status: {c['student_job']}
+- Total Combined Earned ECTS: {c['ects_s1'] + c['ects_s2']} points
+- Semester 1 Numeric Grade: {c['grade_s1']} -> Evaluated Stand: {s1_status}
+- Semester 2 Numeric Grade: {c['grade_s2']} -> Evaluated Stand: {s2_status}
+- Performance Trend Direction: {trend_status}
+</STUDENT_METRICS>
+
+<REGULATORY_CONTEXT_BLOCKS>
+{context_payload}
+</REGULATORY_CONTEXT_BLOCKS>
+"""
+            if st.button("⚡ Synthesize Regulatory Report", use_container_width=True):
+                try:
+                    with st.spinner(
+                        "LLM synthesizing verified student regulatory advice..."
+                    ):
+                        response = client.chat.completions.create(
+                            model="llama-3.1-8b-instant",
+                            messages=[
+                                {"role": "system", "content": system_message},
+                                {"role": "user", "content": user_message},
+                            ],
+                            temperature=0.0,
+                        )
+                        st.markdown(response.choices[0].message.content)
+                except Exception as e:
+                    st.error(
+                        f"❌ **Groq Authentication Crash during RAG Generation:** {str(e)}"
+                    )
+
+        with st.expander("🔎 View Matched Source Regulatory Clauses"):
+            for i, rule in enumerate(matched_rules, 1):
+                st.info(f"**Source Context Block #{i}:**\n{rule}")
+
+    # TAB 2: AD-HOC CONSULTATION SANDBOX
+    with tab2:
+        st.subheader("💬 Ad-Hoc Regulatory Consultation Sandbox")
+        st.markdown(
+            "*Ask a free-text question regarding specific regulations or edge cases for this student:*"
+        )
+
+        custom_question = st.text_input(
+            "Enter your specific advisor question here:", key="advisor_free_question"
+        )
+        ask_button = st.button("💬 Query Examination Database")
+
+        if ask_button and custom_question:
+            if not GROQ_API_KEY:
+                st.error(
+                    "❌ **LLM Configuration Error:** Missing `GROQ_API_KEY` environment token."
+                )
+            else:
+                client = Groq(api_key=GROQ_API_KEY)
+                question_vector = vectorizer.transform([custom_question])
+                question_scores = cosine_similarity(
+                    question_vector, tfidf_matrix
+                ).flatten()
+
+                st.session_state.sandbox_chunks = [
+                    chunks[idx][:1500] + "..."
+                    for idx in np.argsort(question_scores)[::-1][:3]
+                    if question_scores[idx] >= 0.00
+                ]
+
+                if st.session_state.sandbox_chunks:
+                    payload = "\n\n".join(st.session_state.sandbox_chunks)
+                    prompt = f"Student Profile: {c}. Regulation context: {payload}. Answer the following query: {custom_question}"
+
+                    with st.spinner("Synthesizing advice..."):
+                        res = client.chat.completions.create(
+                            model="llama-3.1-8b-instant",
+                            messages=[{"role": "user", "content": prompt}],
+                        )
+                        st.session_state.sandbox_response = res.choices[
+                            0
+                        ].message.content
+
+        if st.session_state.sandbox_response is not None:
+            st.markdown("---")
+            st.success("#### 📋 Custom Consultation Answer")
+            st.write(st.session_state.sandbox_response)

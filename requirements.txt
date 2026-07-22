@@ -1,7 +1,8 @@
 streamlit
 pandas
 numpy
-scikit-learn
 joblib
-groq
+scikit-learn
 python-dotenv
+groq
+plotly
