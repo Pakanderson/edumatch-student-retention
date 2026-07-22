@@ -8,18 +8,18 @@ from utils import (
     CLUSTER_LABELS,
 )
 
-# 1. Configuration
+# 1. Page Configuration
 st.set_page_config(
-    page_title="Student Profile & LIVE ANALYTICS",
-    page_icon="🎓",
-    layout="wide"
+    page_title="Student Profile & LIVE ANALYTICS", page_icon="🎓", layout="wide"
 )
 
 # 2. System Initialization
 apply_custom_styles()
 init_session_state()
 
-model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix = load_all_assets()
+model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix = (
+    load_all_assets()
+)
 
 st.title("🎓 Student Profile & LIVE ANALYTICS")
 st.markdown("---")
@@ -135,7 +135,7 @@ with col2:
         c = st.session_state.cached_student
         cluster_id = st.session_state.cluster_id
 
-        # 1. Compute Driver Metrics
+        # 1. Compute Operational Driver Scores
         s1_deficit = max(0, 30 - c["ects_s1"])
         s2_deficit = max(0, 30 - c["ects_s2"])
         ects_penalty_score = (s1_deficit * 1.5) + (s2_deficit * 1.5)
@@ -157,35 +157,22 @@ with col2:
             socio_base += 15.0
         socioeconomic_score = min(100.0, socio_base)
 
-        # 2. Weighted Attrition Risk Calculation
-        # Dynamic 60% Academic / 40% Socioeconomic weighting
+        # 2. Dynamic Weighted Risk (60% Academic, 40% Socioeconomic)
         heuristic_risk = (academic_score * 0.60) + (socioeconomic_score * 0.40)
 
         if st.session_state.risk_pct is not None:
-            # Blend ML model prediction with heuristic drivers safely
+            # Smooth blend between ML model probability and heuristic sub-drivers
             final_risk_pct = (st.session_state.risk_pct * 0.5) + (heuristic_risk * 0.5)
         else:
             final_risk_pct = heuristic_risk
 
-        # 3. Proportional Grade Shield (Proactive scaling instead of hard clamp)
-        # Excellent grades (<= 1.5) apply a soft 15% mitigation instead of hard-locking to 25%
-        if c["grade_s1"] <= 1.5 and c["grade_s2"] <= 1.5:
-            final_risk_pct = final_risk_pct * 0.85
-
+        # NO HARD CAPS HERE (25.0 / 28.0 removed completely)
         final_risk_pct = min(98.5, max(4.5, final_risk_pct))
 
-        # 3. DOMAIN GUARDRALL SHIELD: Hard-cap overall risk if driver sub-scores are low/stable
-        if academic_score < 30.0 and socioeconomic_score < 50.0:
-            final_risk_pct = min(final_risk_pct, 28.0)
-        elif c["grade_s1"] <= 2.0 or c["grade_s2"] <= 2.0:
-            final_risk_pct = min(final_risk_pct, 25.0)
-
-        final_risk_pct = min(98.5, max(4.5, final_risk_pct))
-
-        # 4. Dynamic Banner Output
-        if final_risk_pct >= 45.0:
+        # 3. Dynamic Visual Alert Banner
+        if final_risk_pct >= 40.0:
             st.error(
-                f"### ⚠️ HIGH RETENTION ALERT: **{final_risk_pct:.1f}% Attrition Probability** (Threshold: 45.0%)"
+                f"### ⚠️ HIGH RETENTION ALERT: **{final_risk_pct:.1f}% Attrition Probability** (Threshold: 40.0%)"
             )
         else:
             st.success(
