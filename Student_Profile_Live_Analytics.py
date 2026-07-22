@@ -129,14 +129,26 @@ with col1:
             step=0.1,
         )
 
-        submit_btn = st.form_submit_button("🚀 Run Prediction & Live Analytics")
+# 1. Create columns for horizontal layout
+btn_col1, btn_col2 = st.columns(2)
 
-    if st.button("🧹 Clear All Inputs", use_container_width=True):
-        clear_inputs()
-        st.rerun()
+with btn_col1:
+    # This button submits the form
+    submit_btn = st.form_submit_button("🚀 Run Prediction & Live Analytics")
 
-    if submit_btn:
-        st.session_state.risk_pct = None
+with btn_col2:
+    # This button triggers the clear logic
+    clear_btn = st.form_submit_button("🧹 Clear All Inputs")
+
+# 2. Logic processing (Place this AFTER the form context)
+if clear_btn:
+    clear_inputs()
+    st.rerun()
+
+if submit_btn:
+    # Your prediction logic here
+    # ...
+    st.rerun()
 
         # Store input selections into session state so returning to this page retains all choices
         st.session_state.cached_student = {

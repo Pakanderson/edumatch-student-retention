@@ -116,7 +116,19 @@ def apply_custom_styles():
         """,
         unsafe_allow_html=True,
     )
-
+# Add this inside your existing apply_custom_styles() function in utils.py
+st.markdown(
+    """
+    <style>
+    /* Select the second button inside the form row and make it red */
+    div[data-testid="stForm"] div[data-testid="column"]:nth-of-type(2) button {
+        background-color: #ff4b4b !important;
+        color: white !important;
+    }
+    </style>
+""",
+    unsafe_allow_html=True,
+)
 
 def init_session_state():
     """Initializes global session state values across pages."""
