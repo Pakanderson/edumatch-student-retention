@@ -24,7 +24,7 @@ model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix = (
 # Define your presentation threshold here
 THRESHOLD = 45.0
 
-st.title("🎓 STUDENT PROFILE AND LIVE ANALYTICS")
+st.title("🎓 EDUMATCH - A Predictive Modeling and Prescriptive Analytics Platform for Early  Student Retention Intervention")
 st.markdown("---")
 
 col1, col2 = st.columns([1, 1.2])
