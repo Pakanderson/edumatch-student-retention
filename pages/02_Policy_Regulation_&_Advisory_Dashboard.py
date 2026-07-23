@@ -18,12 +18,6 @@ st.set_page_config(
     layout="wide",
 )
 
-# ---------------------------------------------------------------------------
-# SLIDE 2: Mid-point Transition
-# (This will be the first thing the panel sees when you click Page 2)
-# ---------------------------------------------------------------------------
-st.image("assets/mid_slide.jpg", use_container_width=True)
-
 
 # ---------------------------------------------------------------------------
 # 2. System Initialization & Data Loading

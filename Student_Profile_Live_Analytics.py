@@ -17,10 +17,10 @@ st.set_page_config(
     layout="wide",
 )
 
-# ---------------------------------------------------------------------------
-# SLIDE 1: Introduction (Displays at the very start)
+# SLIDES 1 & 2: Introduction and Architecture (Displays at the very start)
 # ---------------------------------------------------------------------------
 st.image("assets/intro_slide.jpg", use_container_width=True)
+st.image("assets/mid_slide.jpg", use_container_width=True)  
 st.divider()
 
 # ---------------------------------------------------------------------------
