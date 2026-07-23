@@ -9,29 +9,25 @@ from utils import (
     GROQ_API_KEY,
 )
 
-import streamlit as st
-
-# ... your imports ...
-
-# SLIDE 2: Mid-point Transition (Sets the stage for the RAG part)
-st.image("assets/mid_slide.jpg", use_container_width=True)
-
-# ... your RAG Sandbox and automated briefing code ...
-st.header("Ad-Hoc Regulatory Consultation Sandbox")
-# ... sandbox code ...
-
-# Optional: Spacer to push the closing slide to the bottom
-st.markdown("<br><br>", unsafe_allow_html=True)
-
-# SLIDE 3: Closing
-st.image("assets/final_slide.jpg", use_container_width=True)
-
-# 1. Configuration
+# ---------------------------------------------------------------------------
+# 1. Configuration (CRITICAL: MUST BE THE FIRST STREAMLIT COMMAND)
+# ---------------------------------------------------------------------------
 st.set_page_config(
-    page_title="POLICY REGULATIONS AND ADVISORY DASHBOARD", page_icon="⚖️", layout="wide"
+    page_title="POLICY REGULATIONS AND ADVISORY DASHBOARD",
+    page_icon="⚖️",
+    layout="wide",
 )
 
-# 2. System Initialization
+# ---------------------------------------------------------------------------
+# SLIDE 2: Mid-point Transition
+# (This will be the first thing the panel sees when you click Page 2)
+# ---------------------------------------------------------------------------
+st.image("assets/mid_slide.jpg", use_container_width=True)
+
+
+# ---------------------------------------------------------------------------
+# 2. System Initialization & Data Loading
+# ---------------------------------------------------------------------------
 apply_custom_styles()
 init_session_state()
 
@@ -219,3 +215,9 @@ else:
             st.markdown("---")
             st.success("#### 📋 Custom Consultation Answer")
             st.write(st.session_state.sandbox_response)
+
+# ---------------------------------------------------------------------------
+# SLIDE 3: Closing Slide (Displays at the very bottom of the page)
+# ---------------------------------------------------------------------------
+st.markdown("<br><br>", unsafe_allow_html=True)
+st.image("assets/final_slide.jpg", use_container_width=True)
