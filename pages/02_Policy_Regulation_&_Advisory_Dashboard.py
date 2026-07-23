@@ -9,6 +9,23 @@ from utils import (
     GROQ_API_KEY,
 )
 
+import streamlit as st
+
+# ... your imports ...
+
+# SLIDE 2: Mid-point Transition (Sets the stage for the RAG part)
+st.image("assets/mid_slide.jpg", use_container_width=True)
+
+# ... your RAG Sandbox and automated briefing code ...
+st.header("Ad-Hoc Regulatory Consultation Sandbox")
+# ... sandbox code ...
+
+# Optional: Spacer to push the closing slide to the bottom
+st.markdown("<br><br>", unsafe_allow_html=True)
+
+# SLIDE 3: Closing
+st.image("assets/final_slide.jpg", use_container_width=True)
+
 # 1. Configuration
 st.set_page_config(
     page_title="POLICY REGULATIONS AND ADVISORY DASHBOARD", page_icon="⚖️", layout="wide"

@@ -8,6 +8,19 @@ from utils import (
     CLUSTER_LABELS,
 )
 
+import streamlit as st
+# ... your imports and st.set_page_config ...
+
+# SLIDE 1: Introduction (Display at the very start)
+st.image("assets/intro_slide.jpg", use_container_width=True)
+
+# Divider to create a "next" feel
+st.divider()
+
+# ... NOW your Live Analytics Form and Logic follow ...
+st.header("Student Profile & Live Analytics")
+# ... your form code ...
+
 # 1. Page Configuration
 st.set_page_config(
     page_title="EDUMATCH - A Predictive Modeling and Prescriptive Analytics Platform for Early  Student Retention Intervention",
