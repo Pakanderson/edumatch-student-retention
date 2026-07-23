@@ -8,27 +8,24 @@ from utils import (
     CLUSTER_LABELS,
 )
 
-import streamlit as st
-# ... your imports and st.set_page_config ...
-
-# SLIDE 1: Introduction (Display at the very start)
-st.image("assets/intro_slide.jpg", use_container_width=True)
-
-# Divider to create a "next" feel
-st.divider()
-
-# ... NOW your Live Analytics Form and Logic follow ...
-st.header("Student Profile & Live Analytics")
-# ... your form code ...
-
-# 1. Page Configuration
+# ---------------------------------------------------------------------------
+# 1. Page Configuration (CRITICAL: MUST BE THE FIRST STREAMLIT COMMAND)
+# ---------------------------------------------------------------------------
 st.set_page_config(
-    page_title="EDUMATCH - A Predictive Modeling and Prescriptive Analytics Platform for Early  Student Retention Intervention",
+    page_title="EDUMATCH - A Predictive Modeling and Prescriptive Analytics Platform for Early Student Retention Intervention",
     page_icon="🎓",
     layout="wide",
 )
 
-# 2. System Initialization
+# ---------------------------------------------------------------------------
+# SLIDE 1: Introduction (Displays at the very start)
+# ---------------------------------------------------------------------------
+st.image("assets/intro_slide.jpg", use_container_width=True)
+st.divider()
+
+# ---------------------------------------------------------------------------
+# 2. System Initialization & Asset Loading
+# ---------------------------------------------------------------------------
 apply_custom_styles()
 init_session_state()
 
@@ -39,7 +36,7 @@ model, scaler, kmeans, scaler_clustering, chunks, vectorizer, tfidf_matrix = (
 # Define your presentation threshold here
 THRESHOLD = 45.0
 
-st.title("🎓 EDUMATCH - A Predictive Modeling and Prescriptive Analytics Platform for Early  Student Retention Intervention")
+st.title("🎓 EDUMATCH - A Predictive Modeling and Prescriptive Analytics Platform for Early Student Retention Intervention")
 st.markdown("---")
 
 col1, col2 = st.columns([1, 1.2])
