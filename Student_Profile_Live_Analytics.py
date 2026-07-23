@@ -10,7 +10,9 @@ from utils import (
 
 # 1. Page Configuration
 st.set_page_config(
-    page_title="Student Profile & LIVE ANALYTICS", page_icon="🎓", layout="wide"
+    page_title="EDUMATCH - A Predictive Modeling and Prescriptive Analytics Platform for Early  Student Retention Intervention",
+    page_icon="🎓",
+    layout="wide",
 )
 
 # 2. System Initialization
